@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import '../../utils/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/error_handler.dart';
+import 'forgot_password_screen.dart';
 
 /// Login Screen Widget
 class LoginScreen extends StatefulWidget {
@@ -366,9 +367,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return Align(
       alignment: Alignment.centerRight,
       child: GestureDetector(
-        onTap: () =>
-            showInfoSnackBar(context, 'Forgot password - Coming soon!'),
-        child: const Text(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const ForgotPasswordScreen(),
+          ),
+        ),
+        child: const Text(           // ← he add kar
           'Forgot Password?',
           style: TextStyle(
             fontSize: 13,

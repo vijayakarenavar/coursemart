@@ -187,6 +187,55 @@ class AuthProvider extends ChangeNotifier {
       rethrow;
     }
   }
+  /// Send forgot password OTP
+  Future<void> sendForgotPasswordOtp({required String email}) async {
+    try {
+      // TODO: Backend endpoint milal ki uncomment kar
+      // await _apiService.sendForgotPasswordOtp(email: email);
+      await Future.delayed(const Duration(seconds: 1)); // MOCK
+      debugPrint('📧 OTP sent to $email (MOCK)');
+    } catch (e) {
+      debugPrint('❌ Send OTP error: $e');
+      rethrow;
+    }
+  }
+
+  /// Verify forgot password OTP
+  Future<void> verifyForgotPasswordOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      // TODO: Backend endpoint milal ki uncomment kar
+      // await _apiService.verifyForgotPasswordOtp(email: email, otp: otp);
+      await Future.delayed(const Duration(seconds: 1)); // MOCK
+      debugPrint('✅ OTP verified (MOCK)');
+    } catch (e) {
+      debugPrint('❌ Verify OTP error: $e');
+      rethrow;
+    }
+  }
+
+  /// Reset password with verified OTP
+  Future<void> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    try {
+      // TODO: Backend endpoint milal ki uncomment kar
+      // await _apiService.resetPassword(
+      //   email: email,
+      //   otp: otp,
+      //   newPassword: newPassword,
+      // );
+      await Future.delayed(const Duration(seconds: 1)); // MOCK
+      debugPrint('🔑 Password reset for $email (MOCK)');
+    } catch (e) {
+      debugPrint('❌ Reset password error: $e');
+      rethrow;
+    }
+  }
 
   /// Handle 401 unauthorized error
   ///

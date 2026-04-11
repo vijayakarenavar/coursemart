@@ -1,52 +1,59 @@
-/// Change Password Screen - CourseMart
+/// Forgot Password — Screen 3: Reset Password
+///
+/// User sets a new password after OTP verification.
+/// On success → navigates back to Login.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
+
 import '../../utils/app_colors.dart';
 import '../../utils/error_handler.dart';
+import '../../providers/auth_provider.dart';
 
-class ChangePasswordScreen extends StatefulWidget {
-  const ChangePasswordScreen({super.key});
+class ResetPasswordScreen extends StatefulWidget {
+  final String email;
+  final String otp;
+
+  const ResetPasswordScreen({
+    super.key,
+    required this.email,
+    required this.otp,
+  });
 
   @override
-  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey         = GlobalKey<FormState>();
-  final _currentPwdCtrl  = TextEditingController();
   final _newPwdCtrl      = TextEditingController();
   final _confirmPwdCtrl  = TextEditingController();
 
-  bool _hideCurrentPwd = true;
-  bool _hideNewPwd     = true;
-  bool _hideConfirmPwd = true;
-  bool _isLoading      = false;
+  bool _hideNew     = true;
+  bool _hideConfirm = true;
+  bool _isLoading   = false;
 
   @override
   void dispose() {
-    _currentPwdCtrl.dispose();
     _newPwdCtrl.dispose();
     _confirmPwdCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _handleChangePassword() async {
+  Future<void> _handleReset() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      final msg = await context.read<AuthProvider>().changePassword(
-        currentPassword: _currentPwdCtrl.text,
+      await context.read<AuthProvider>().resetPassword(
+        email: widget.email,
+        otp: widget.otp,
         newPassword: _newPwdCtrl.text,
       );
       if (!mounted) return;
-      showSuccessSnackBar(context, msg);
-      _currentPwdCtrl.clear();
-      _newPwdCtrl.clear();
-      _confirmPwdCtrl.clear();
-      Navigator.pop(context);
+      showSuccessSnackBar(context, 'Password reset successfully! Please login.');
+      // Pop all forgot-password screens → back to Login
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       if (!mounted) return;
       showErrorSnackBar(context, getErrorMessage(e));
@@ -61,7 +68,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         title: const Text(
-          'Change Password',
+          'Reset Password',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
         ),
         backgroundColor: AppColors.primary,
@@ -77,11 +84,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               children: [
                 _buildHeader(),
                 const SizedBox(height: 24),
-                _buildSectionLabel('Password Fields'),
+                _buildSectionLabel('New Password'),
                 _buildFieldsCard(),
                 const SizedBox(height: 24),
-                _buildSubmitButton(),
-                _buildCancelButton(),
+                _buildResetButton(),
                 const SizedBox(height: 40),
               ],
             ),
@@ -93,7 +99,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   Widget _buildHeader() => Container(
     width: double.infinity,
-    padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
+    padding: const EdgeInsets.fromLTRB(16, 28, 16, 36),
     decoration: const BoxDecoration(
       color: AppColors.primary,
       borderRadius: BorderRadius.only(
@@ -104,8 +110,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     child: Column(
       children: [
         Container(
-          width: 68,
-          height: 68,
+          width: 72,
+          height: 72,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
@@ -116,42 +122,44 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             boxShadow: [
               BoxShadow(
                 color: AppColors.cyan.withOpacity(0.35),
-                blurRadius: 16,
-                offset: const Offset(0, 5),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: const Icon(
-            Icons.lock_outline,
+            Icons.lock_reset_rounded,
             color: Colors.white,
-            size: 28,
+            size: 30,
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         const Text(
-          'Update Your Password',
+          'Set New Password',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 19,
             fontWeight: FontWeight.w800,
             color: Colors.white,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
-          'Keep your account safe and secure',
+          'Create a strong password\nfor your account.',
+          textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 12,
             color: Colors.white.withOpacity(0.5),
+            height: 1.65,
           ),
         ),
       ],
     ),
   );
 
-  Widget _buildSectionLabel(String title) => Padding(
+  Widget _buildSectionLabel(String label) => Padding(
     padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
     child: Text(
-      title.toUpperCase(),
+      label.toUpperCase(),
       style: const TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w700,
@@ -161,65 +169,47 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     ),
   );
 
+  // ── White card with 2 password fields (same style as change-password) ──
   Widget _buildFieldsCard() => Container(
     margin: const EdgeInsets.symmetric(horizontal: 14),
     decoration: BoxDecoration(
       color: AppColors.card,
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(
-        color: Colors.black.withOpacity(0.05),
-        width: 1,
-      ),
+      border: Border.all(color: Colors.black.withOpacity(0.05)),
     ),
     child: Column(
       children: [
-        _passwordField(
-          controller: _currentPwdCtrl,
-          label: 'Current Password',
-          hint: 'Enter current password',
-          iconBg: AppColors.cyanLight,
-          iconColor: AppColors.cyanDark,
-          obscure: _hideCurrentPwd,
-          onToggle: () =>
-              setState(() => _hideCurrentPwd = !_hideCurrentPwd),
-          action: TextInputAction.next,
-          validator: (v) => (v == null || v.isEmpty)
-              ? 'Current password is required'
-              : null,
-          showDivider: true,
-        ),
         _passwordField(
           controller: _newPwdCtrl,
           label: 'New Password',
           hint: 'Enter new password',
           iconBg: const Color(0xFFE6F1FB),
           iconColor: const Color(0xFF378ADD),
-          obscure: _hideNewPwd,
-          onToggle: () => setState(() => _hideNewPwd = !_hideNewPwd),
+          obscure: _hideNew,
+          onToggle: () => setState(() => _hideNew = !_hideNew),
           action: TextInputAction.next,
           validator: (v) {
             if (v == null || v.isEmpty) return 'New password is required';
-            if (v.length < 6) return 'Password must be at least 6 characters';
+            if (v.length < 6) return 'Minimum 6 characters required';
             return null;
           },
           showDivider: true,
         ),
         _passwordField(
           controller: _confirmPwdCtrl,
-          label: 'Confirm New Password',
+          label: 'Confirm Password',
           hint: 'Re-enter new password',
           iconBg: const Color(0xFFEAF3DE),
           iconColor: AppColors.green,
-          obscure: _hideConfirmPwd,
-          onToggle: () =>
-              setState(() => _hideConfirmPwd = !_hideConfirmPwd),
+          obscure: _hideConfirm,
+          onToggle: () => setState(() => _hideConfirm = !_hideConfirm),
           action: TextInputAction.done,
           validator: (v) {
             if (v == null || v.isEmpty) return 'Please confirm your password';
             if (v != _newPwdCtrl.text) return 'Passwords do not match';
             return null;
           },
-          onSubmitted: (_) => _handleChangePassword(),
+          onSubmitted: (_) => _handleReset(),
           showDivider: false,
         ),
       ],
@@ -274,10 +264,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                       hintText: hint,
-                      hintStyle: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[400],
-                      ),
+                      hintStyle:
+                      TextStyle(fontSize: 12, color: Colors.grey[400]),
                       border: InputBorder.none,
                       isDense: true,
                       suffixIcon: IconButton(
@@ -309,11 +297,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         ],
       );
 
-  /// ── Submit button — cyan gradient (matches Sign In) ──
-  Widget _buildSubmitButton() => Padding(
+  Widget _buildResetButton() => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 14),
     child: GestureDetector(
-      onTap: _isLoading ? null : _handleChangePassword,
+      onTap: _isLoading ? null : _handleReset,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 17),
@@ -337,18 +324,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             width: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor:
-              AlwaysStoppedAnimation<Color>(Colors.white),
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           )
               : Row(
             mainAxisSize: MainAxisSize.min,
             children: const [
-              Icon(Icons.lock_outline,
-                  color: Colors.white, size: 17),
+              Icon(Icons.lock_reset_rounded,
+                  color: Colors.white, size: 18),
               SizedBox(width: 8),
               Text(
-                'Change Password',
+                'Reset Password  →',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 15,
@@ -358,28 +344,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    ),
-  );
-
-  Widget _buildCancelButton() => Padding(
-    padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-    child: SizedBox(
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: () => Navigator.pop(context),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.text2,
-          side: const BorderSide(color: Color(0xFFE0E8F0), width: 1.2),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: const Text(
-          'Cancel',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
     ),
