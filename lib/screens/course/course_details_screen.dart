@@ -141,7 +141,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                           Text(course?.title ?? 'Course Details', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
                           if (course?.description.isNotEmpty ?? false) ...[
                             const SizedBox(height: 2),
-                            Text(course!.description, style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            Text(course?.description ?? '', style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6)), maxLines: 1, overflow: TextOverflow.ellipsis),
                           ],
                           const SizedBox(height: 8),
                           Row(

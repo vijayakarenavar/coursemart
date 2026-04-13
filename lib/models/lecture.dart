@@ -36,11 +36,10 @@ class Lecture {
   ///
   /// Handles null safety and provides default values
   factory Lecture.fromJson(Map<String, dynamic> json) {
-    // Parse uploadedAt - handle both string and DateTime
     DateTime uploadedDate;
     if (json['uploadedAt'] != null) {
       if (json['uploadedAt'] is String) {
-        uploadedDate = DateTime.parse(json['uploadedAt']);
+        uploadedDate = DateTime.tryParse(json['uploadedAt']) ?? DateTime.now(); // ✅ fixed
       } else if (json['uploadedAt'] is DateTime) {
         uploadedDate = json['uploadedAt'];
       } else {

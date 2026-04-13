@@ -117,7 +117,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     // ✅ YoutubePlayerBuilder एकदाच — सगळ्यात वर
     return YoutubePlayerBuilder(
       player: YoutubePlayer(
-        controller: _controller ?? YoutubePlayerController(initialVideoId: ''),
+        controller: _controller ?? YoutubePlayerController(initialVideoId: 'dQw4w9WgXcQ'),
         showVideoProgressIndicator: true,
         progressIndicatorColor: AppColors.cyan,
       ),

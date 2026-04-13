@@ -35,10 +35,12 @@ class Certificate {
           ? json['studentId']['name'] ?? 'Unknown'
           : 'Unknown',
       grade: json['grade'] ?? 'N/A',
-      percentage: (json['percentage'] ?? 0).toDouble(),
+      percentage: json['percentage'] != null          // ✅ fix 1
+          ? double.tryParse(json['percentage'].toString()) ?? 0.0
+          : 0.0,
       status: json['status'] ?? 'issued',
-      issuedAt: json['issuedAt'] != null
-          ? DateTime.parse(json['issuedAt'])
+      issuedAt: json['issuedAt'] != null              // ✅ fix 2
+          ? DateTime.tryParse(json['issuedAt']) ?? DateTime.now()
           : DateTime.now(),
     );
   }
