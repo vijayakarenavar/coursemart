@@ -1,7 +1,9 @@
 /// Dashboard Screen
 ///
-/// Main screen displaying enrolled courses with filtering,
-/// pull-to-refresh, and navigation to course details.
+/// ✅ Dark Mode / Light Mode support
+/// ✅ Responsive layout (phone + tablet)
+/// ✅ Landscape view proper
+/// ✅ Safe Area handled
 library;
 
 import 'package:flutter/material.dart';
@@ -13,12 +15,29 @@ import '../../providers/auth_provider.dart';
 import '../../providers/course_provider.dart';
 import '../../widgets/course_card.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/filter_chip.dart';
 import '../course/course_details_screen.dart';
 import '../profile/profile_screen.dart';
 import '../../models/course.dart';
 
-/// Main shell with bottom navigation bar
+/// Responsive helper
+class _Responsive {
+  static bool isTablet(BuildContext context) =>
+      MediaQuery.of(context).size.shortestSide >= 600;
+
+  static bool isLandscape(BuildContext context) =>
+      MediaQuery.of(context).orientation == Orientation.landscape;
+
+  static double horizontalPadding(BuildContext context) =>
+      isTablet(context) ? 24.0 : 16.0;
+
+  static int gridColumns(BuildContext context) =>
+      isTablet(context) ? 4 : 2;
+
+  static double gridAspectRatio(BuildContext context) =>
+      isTablet(context) ? 1.4 : 1.5;
+}
+
+// ── Dashboard Shell ───────────────────────────────────────────────────────────
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -38,32 +57,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isLandscape = _Responsive.isLandscape(context);
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor:
-        _currentIndex == 0 ? AppColors.primary : AppColors.bg,
+        _currentIndex == 0 ? AppColors.primary : Colors.transparent,
         statusBarIconBrightness:
-        _currentIndex == 0 ? Brightness.light : Brightness.dark,
-        systemNavigationBarColor: AppColors.card,
-        systemNavigationBarIconBrightness: Brightness.dark,
+        _currentIndex == 0 ? Brightness.light : (isDark ? Brightness.light : Brightness.dark),
+        systemNavigationBarColor:
+        isDark ? AppColors.cardDark : AppColors.card,
+        systemNavigationBarIconBrightness:
+        isDark ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: AppColors.bg,
-        body: _screens[_currentIndex],
-        bottomNavigationBar: _buildBottomNav(),
+        backgroundColor: AppColors.bgOf(context),
+        // ✅ Landscape मध्ये bottom nav → side nav
+        body: isLandscape
+            ? Row(
+          children: [
+            _buildSideNav(context),
+            Expanded(child: _screens[_currentIndex]),
+          ],
+        )
+            : _screens[_currentIndex],
+        bottomNavigationBar:
+        isLandscape ? null : _buildBottomNav(context, isDark),
       ),
     );
   }
 
-  Widget _buildBottomNav() {
+  // ── Bottom Nav (Portrait) ──
+  Widget _buildBottomNav(BuildContext context, bool isDark) {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.card,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.cardDark : AppColors.card,
         boxShadow: [
           BoxShadow(
-            color: Color(0x10000000),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
             blurRadius: 16,
-            offset: Offset(0, -4),
+            offset: const Offset(0, -4),
           ),
         ],
       ),
@@ -73,44 +107,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(
-                icon: Icons.home_rounded,
-                label: 'Dashboard',
-                active: _currentIndex == 0,
-                onTap: () => setState(() => _currentIndex = 0),
-              ),
-              _NavItem(
-                icon: Icons.menu_book_rounded,
-                label: 'Courses',
-                active: _currentIndex == 1,
-                onTap: () => setState(() => _currentIndex = 1),
-              ),
-              _NavItem(
-                icon: Icons.bar_chart_rounded,
-                label: 'Progress',
-                active: _currentIndex == 2,
-                onTap: () => setState(() => _currentIndex = 2),
-              ),
-              _NavItem(
-                icon: Icons.workspace_premium_rounded,
-                label: 'Certificates',
-                active: _currentIndex == 3,
-                onTap: () => setState(() => _currentIndex = 3),
-              ),
-            ],
+            children: _navItems(context),
           ),
         ),
       ),
     );
   }
+
+  // ── Side Nav (Landscape) ──
+  Widget _buildSideNav(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SafeArea(
+      right: false,
+      child: Container(
+        width: 72,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.cardDark : AppColors.card,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(2, 0),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: _navItems(context, vertical: true),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _navItems(BuildContext context, {bool vertical = false}) {
+    final items = [
+      (Icons.home_rounded, 'Home'),
+      (Icons.menu_book_rounded, 'Courses'),
+      (Icons.bar_chart_rounded, 'Progress'),
+      (Icons.workspace_premium_rounded, 'Certs'),
+    ];
+
+    return items.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final (icon, label) = entry.value;
+      return _NavItem(
+        icon: icon,
+        label: label,
+        active: _currentIndex == idx,
+        vertical: vertical,
+        onTap: () => setState(() => _currentIndex = idx),
+      );
+    }).toList();
+  }
 }
 
-// ── Bottom Nav Item ───────────────────────────────────────────────────────────
+// ── Nav Item ─────────────────────────────────────────────────────────────────
 class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool active;
+  final bool vertical;
   final VoidCallback onTap;
 
   const _NavItem({
@@ -118,6 +174,7 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.active,
     required this.onTap,
+    this.vertical = false,
   });
 
   @override
@@ -126,7 +183,12 @@ class _NavItem extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: vertical
+            ? const EdgeInsets.symmetric(vertical: 6, horizontal: 8)
+            : EdgeInsets.zero,
+        padding: vertical
+            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 12)
+            : const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: active ? AppColors.cyanLight : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
@@ -137,7 +199,7 @@ class _NavItem extends StatelessWidget {
             Icon(
               icon,
               size: 22,
-              color: active ? AppColors.cyan : AppColors.text2,
+              color: active ? AppColors.cyan : AppColors.text2Of(context),
             ),
             const SizedBox(height: 4),
             Text(
@@ -145,7 +207,7 @@ class _NavItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
-                color: active ? AppColors.cyan : AppColors.text2,
+                color: active ? AppColors.cyan : AppColors.text2Of(context),
               ),
             ),
           ],
@@ -174,44 +236,21 @@ class _HomeTabState extends State<_HomeTab> {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape = _Responsive.isLandscape(context);
+    final hp = _Responsive.horizontalPadding(context);
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.bgOf(context),
       body: Column(
         children: [
-          // ── Dark header with CourseMart logo ──
           _buildHeader(context),
-
-          // ── Scrollable content ──
           Expanded(
             child: Consumer<CourseProvider>(
               builder: (context, courseProvider, _) {
                 return RefreshIndicator(
                   onRefresh: () => courseProvider.refresh(),
                   color: AppColors.cyan,
-                  child: ListView(
-                    padding: EdgeInsets.zero,
-                    children: [
-                      // Welcome card
-                      _buildWelcomeCard(context),
-                      const SizedBox(height: 20),
-
-                      // Stat cards 2x2
-                      _buildStatGrid(context, courseProvider),
-                      const SizedBox(height: 20),
-
-                      // Overall progress bar card
-                      _buildProgressCard(context, courseProvider),
-                      const SizedBox(height: 20),
-
-                      // Filter tabs
-                      // _buildFilterBar(context, courseProvider),
-                      // const SizedBox(height: 16),
-
-                      // Course list
-                      _buildCourseList(context, courseProvider),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+                  child: _buildPortraitContent(context, courseProvider, hp),
                 );
               },
             ),
@@ -221,8 +260,63 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
+  // ── Portrait: single column scroll ──
+  Widget _buildPortraitContent(
+      BuildContext context, CourseProvider cp, double hp) {
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        _buildWelcomeCard(context, hp),
+        SizedBox(height: hp),
+        _buildStatGrid(context, cp, hp),
+        SizedBox(height: hp),
+        _buildProgressCard(context, cp, hp),
+        SizedBox(height: hp),
+        _buildCourseList(context, cp, hp),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  // ── Landscape: two column layout ──
+  Widget _buildLandscapeContent(
+      BuildContext context, CourseProvider cp, double hp) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left column: welcome + stats + progress
+        Expanded(
+          flex: 4,
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              _buildWelcomeCard(context, hp),
+              SizedBox(height: hp),
+              _buildStatGrid(context, cp, hp),
+              SizedBox(height: hp),
+              _buildProgressCard(context, cp, hp),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+        // Right column: course list
+        Expanded(
+          flex: 6,
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              _buildCourseList(context, cp, hp),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   // ── Header ──
   Widget _buildHeader(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       color: AppColors.primary,
       child: SafeArea(
@@ -231,7 +325,6 @@ class _HomeTabState extends State<_HomeTab> {
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
           child: Row(
             children: [
-              // CourseMart logo
               RichText(
                 text: const TextSpan(
                   children: [
@@ -277,7 +370,7 @@ class _HomeTabState extends State<_HomeTab> {
               ),
               const SizedBox(width: 12),
 
-              // Avatar — uses real student name initial
+              // Avatar
               Consumer<AuthProvider>(
                 builder: (context, auth, _) {
                   final initial = auth.studentName.isNotEmpty
@@ -320,14 +413,13 @@ class _HomeTabState extends State<_HomeTab> {
   }
 
   // ── Welcome Card ──
-  Widget _buildWelcomeCard(BuildContext context) {
+  Widget _buildWelcomeCard(BuildContext context, double hp) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: EdgeInsets.fromLTRB(hp, hp, hp, 0),
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
           return Stack(
             children: [
-              // Cyan glow top-right
               Positioned(
                 top: -20,
                 right: -20,
@@ -396,35 +488,37 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // ── Stat Grid 2x2 ──
-  Widget _buildStatGrid(BuildContext context, CourseProvider courseProvider) {
-    final enrolled = courseProvider.courseCount;
-    final completed = courseProvider.completedLecturesCount;
-    final remaining = courseProvider.remainingLecturesCount;
-    final overallPct =
-        '${(courseProvider.overallProgress * 100).toInt()}%';
+  // ── Stat Grid ──
+  Widget _buildStatGrid(
+      BuildContext context, CourseProvider cp, double hp) {
+    final enrolled = cp.courseCount;
+    final completed = cp.completedLecturesCount;
+    final remaining = cp.remainingLecturesCount;
+    final overallPct = '${(cp.overallProgress * 100).toInt()}%';
+    final columns = _Responsive.gridColumns(context);
+    final aspectRatio = _Responsive.gridAspectRatio(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: hp),
       child: GridView.count(
-        crossAxisCount: 2,
+        crossAxisCount: columns,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 1.5,
+        childAspectRatio: aspectRatio,
         children: [
           _StatCard(
             icon: Icons.menu_book_rounded,
             iconBg: AppColors.primary,
             number: '$enrolled',
-            label: 'Enrolled Courses',
+            label: 'Enrolled',
           ),
           _StatCard(
             icon: Icons.check_circle_rounded,
             iconBg: AppColors.green,
             number: '$completed',
-            label: 'Completed Lectures',
+            label: 'Completed',
           ),
           _StatCard(
             icon: Icons.access_time_rounded,
@@ -436,23 +530,23 @@ class _HomeTabState extends State<_HomeTab> {
             icon: Icons.bar_chart_rounded,
             iconBg: AppColors.cyan,
             number: overallPct,
-            label: 'Overall Progress',
+            label: 'Progress',
           ),
         ],
       ),
     );
   }
 
-  // ── Overall Progress Card ──
+  // ── Progress Card ──
   Widget _buildProgressCard(
-      BuildContext context, CourseProvider courseProvider) {
-    final pct = (courseProvider.overallProgress * 100).toInt();
+      BuildContext context, CourseProvider cp, double hp) {
+    final pct = (cp.overallProgress * 100).toInt();
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: hp),
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: AppColors.cardOf(context),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -467,12 +561,12 @@ class _HomeTabState extends State<_HomeTab> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Overall Learning Progress',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.text,
+                    color: AppColors.textOf(context),
                   ),
                 ),
                 Container(
@@ -497,11 +591,10 @@ class _HomeTabState extends State<_HomeTab> {
             ClipRRect(
               borderRadius: BorderRadius.circular(100),
               child: LinearProgressIndicator(
-                value: courseProvider.overallProgress,
+                value: cp.overallProgress,
                 minHeight: 8,
-                backgroundColor: AppColors.progressBarBg,
-                valueColor:
-                const AlwaysStoppedAnimation(AppColors.cyan),
+                backgroundColor: AppColors.progressBarBgOf(context),
+                valueColor: const AlwaysStoppedAnimation(AppColors.cyan),
               ),
             ),
           ],
@@ -510,25 +603,10 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // ── Filter Bar ──
-  // Widget _buildFilterBar(
-  //     BuildContext context, CourseProvider courseProvider) {
-  //   return Consumer<CourseProvider>(
-  //     builder: (context, cp, _) {
-  //       return FilterBar(
-  //         options: FilterBar.courseFilters,
-  //         selectedValue: cp.filter,
-  //         onFilterChanged: (filter) => cp.setFilter(filter),
-  //       );
-  //     },
-  //   );
-  // }
-
   // ── Course List ──
   Widget _buildCourseList(
-      BuildContext context, CourseProvider courseProvider) {
-    // Loading
-    if (courseProvider.isLoading && courseProvider.courseCount == 0) {
+      BuildContext context, CourseProvider cp, double hp) {
+    if (cp.isLoading && cp.courseCount == 0) {
       return Column(
         children: const [
           CourseCardShimmer(),
@@ -538,34 +616,56 @@ class _HomeTabState extends State<_HomeTab> {
       );
     }
 
-    // Error
-    if (courseProvider.hasError && courseProvider.courseCount == 0) {
+    if (cp.hasError && cp.courseCount == 0) {
       return EmptyState.error(
-        message:
-        courseProvider.errorMessage ?? 'Failed to load courses',
+        message: cp.errorMessage ?? 'Failed to load courses',
         onRetry: () => context.read<CourseProvider>().refresh(),
       );
     }
 
-    // Empty
-    if (courseProvider.filteredCourses.isEmpty) {
+    if (cp.filteredCourses.isEmpty) {
       return EmptyState.noCourses(
         onRefresh: () => context.read<CourseProvider>().refresh(),
       );
     }
 
-    // Courses
+    // ✅ Tablet/Landscape: grid layout for courses
+    if (_Responsive.isTablet(context)) {
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: hp),
+        child: GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.8,
+          children: cp.filteredCourses.map((course) {
+            return CourseCard(
+              course: course,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CourseDetailsScreen(courseId: course.id),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      );
+    }
+
+    // Phone portrait: single column
     return Column(
-      children: courseProvider.filteredCourses.map((course) {
+      children: cp.filteredCourses.map((course) {
         return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          padding: EdgeInsets.fromLTRB(hp, 0, hp, 14),
           child: CourseCard(
             course: course,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>
-                    CourseDetailsScreen(courseId: course.id),
+                builder: (_) => CourseDetailsScreen(courseId: course.id),
               ),
             ),
           ),
@@ -592,9 +692,9 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.cardOf(context),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -608,28 +708,31 @@ class _StatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               color: iconBg,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: Colors.white, size: 18),
+            child: Icon(icon, color: Colors.white, size: 17),
           ),
           const Spacer(),
           Text(
             number,
-            style: const TextStyle(
-              fontSize: 26,
+            style: TextStyle(
+              fontSize: 24,
               fontWeight: FontWeight.w900,
-              color: AppColors.text,
+              color: AppColors.textOf(context),
               height: 1,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: AppColors.text2),
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.text2Of(context),
+            ),
           ),
         ],
       ),
@@ -643,10 +746,13 @@ class _CoursesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hp = _Responsive.horizontalPadding(context);
+    final isTablet = _Responsive.isTablet(context);
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.bgOf(context),
       body: Consumer<CourseProvider>(
-        builder: (context, courseProvider, _) {
+        builder: (context, cp, _) {
           return ListView(
             padding: EdgeInsets.zero,
             children: [
@@ -654,25 +760,46 @@ class _CoursesTab extends StatelessWidget {
                 title: '📚 My Courses',
                 subtitle: 'View all your enrolled courses',
               ),
-              if (courseProvider.isLoading && courseProvider.courseCount == 0)
-                const Center(
+              if (cp.isLoading && cp.courseCount == 0)
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: CircularProgressIndicator(
+                    padding: const EdgeInsets.all(32),
+                    child: const CircularProgressIndicator(
                         color: AppColors.cyan),
                   ),
                 )
+              else if (isTablet)
+              // Tablet: 2 column grid
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: hp),
+                  child: GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 14,
+                    childAspectRatio: 1.8,
+                    children: cp.courses.map((c) => CourseCard(
+                      course: c,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CourseDetailsScreen(courseId: c.id),
+                        ),
+                      ),
+                    )).toList(),
+                  ),
+                )
               else
-                ...courseProvider.courses.map(
+                ...cp.courses.map(
                       (c) => Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    padding: EdgeInsets.fromLTRB(hp, 0, hp, 16),
                     child: CourseCard(
                       course: c,
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) =>
-                              CourseDetailsScreen(courseId: c.id),
+                          builder: (_) => CourseDetailsScreen(courseId: c.id),
                         ),
                       ),
                     ),
@@ -693,12 +820,13 @@ class _ProgressTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hp = _Responsive.horizontalPadding(context);
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.bgOf(context),
       body: Consumer<CourseProvider>(
-        builder: (context, courseProvider, _) {
-          final pct =
-          (courseProvider.overallProgress * 100).toInt();
+        builder: (context, cp, _) {
+          final pct = (cp.overallProgress * 100).toInt();
           return ListView(
             padding: EdgeInsets.zero,
             children: [
@@ -707,21 +835,20 @@ class _ProgressTab extends StatelessWidget {
                 subtitle: 'Track your learning journey',
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                padding: EdgeInsets.symmetric(horizontal: hp),
                 child: Row(
                   children: [
                     _ProgressStat(
                       icon: Icons.menu_book_rounded,
                       iconColor: AppColors.primary,
-                      number: '${courseProvider.courseCount}',
+                      number: '${cp.courseCount}',
                       label: 'Total Courses',
                     ),
                     const SizedBox(width: 12),
                     _ProgressStat(
                       icon: Icons.check_circle_rounded,
                       iconColor: AppColors.green,
-                      number:
-                      '${courseProvider.completedLecturesCount}',
+                      number: '${cp.completedLecturesCount}',
                       label: 'Completed',
                     ),
                     const SizedBox(width: 12),
@@ -735,20 +862,19 @@ class _ProgressTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: hp),
                 child: Text(
                   'Course-wise Progress',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.text,
+                    color: AppColors.textOf(context),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
-              ...courseProvider.courses
-                  .map((c) => _CourseProgressItem(course: c)),
+              ...cp.courses.map((c) => _CourseProgressItem(course: c)),
               const SizedBox(height: 20),
             ],
           );
@@ -775,10 +901,9 @@ class _ProgressStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding:
-        const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: AppColors.cardOf(context),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -802,16 +927,18 @@ class _ProgressStat extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               number,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
-                color: AppColors.text,
+                color: AppColors.textOf(context),
               ),
             ),
             Text(
               label,
-              style: const TextStyle(
-                  fontSize: 10, color: AppColors.text2),
+              style: TextStyle(
+                fontSize: 10,
+                color: AppColors.text2Of(context),
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -820,20 +947,22 @@ class _ProgressStat extends StatelessWidget {
     );
   }
 }
+
 class _CourseProgressItem extends StatelessWidget {
-  final Course course; // dynamic ऐवजी Course type वापर
+  final Course course;
 
   const _CourseProgressItem({required this.course});
 
   @override
   Widget build(BuildContext context) {
-    final pct = course.progress; // int 0-100, directly वापर
+    final hp = _Responsive.horizontalPadding(context);
+    final pct = course.progress;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      margin: EdgeInsets.fromLTRB(hp, 0, hp, 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.cardOf(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -848,20 +977,24 @@ class _CourseProgressItem extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                course.title, // ✅ title
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text,
+              Expanded(
+                child: Text(
+                  course.title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textOf(context),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 '$pct%',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
-                  color: pct > 0 ? AppColors.cyan : AppColors.text2,
+                  color: pct > 0 ? AppColors.cyan : AppColors.text2Of(context),
                 ),
               ),
             ],
@@ -870,9 +1003,9 @@ class _CourseProgressItem extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(100),
             child: LinearProgressIndicator(
-              value: course.progressDecimal, // ✅ 0.0-1.0
+              value: course.progressDecimal,
               minHeight: 7,
-              backgroundColor: AppColors.progressBarBg,
+              backgroundColor: AppColors.progressBarBgOf(context),
               valueColor: const AlwaysStoppedAnimation(AppColors.cyan),
             ),
           ),
@@ -881,7 +1014,10 @@ class _CourseProgressItem extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               '${course.completedLectures}/${course.totalLectures} lectures completed',
-              style: const TextStyle(fontSize: 11, color: AppColors.text2),
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.text2Of(context),
+              ),
             ),
           ),
         ],
@@ -897,7 +1033,7 @@ class _CertificatesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.bgOf(context),
       body: Column(
         children: [
           _FloatingHeader(
@@ -926,20 +1062,20 @@ class _CertificatesTab extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'No certificates yet',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.text,
+                        color: AppColors.textOf(context),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Complete your courses to earn certificates and showcase your skills!',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.text2,
+                        color: AppColors.text2Of(context),
                         height: 1.6,
                       ),
                       textAlign: TextAlign.center,
@@ -955,7 +1091,7 @@ class _CertificatesTab extends StatelessWidget {
   }
 }
 
-// ── Floating Header (for non-dashboard tabs) ──────────────────────────────────
+// ── Floating Header ───────────────────────────────────────────────────────────
 class _FloatingHeader extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -965,9 +1101,11 @@ class _FloatingHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
+    final hp = _Responsive.horizontalPadding(context);
+
     return Container(
-      color: AppColors.bg,
-      padding: EdgeInsets.fromLTRB(16, topPadding + 14, 16, 16),
+      color: AppColors.bgOf(context),
+      padding: EdgeInsets.fromLTRB(hp, topPadding + 14, hp, 16),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),

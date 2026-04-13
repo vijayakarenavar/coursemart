@@ -2,85 +2,73 @@
 ///
 /// Provides centralized error handling and display
 /// for API errors, network errors, and validation.
+///
+/// ✅ Snackbars आता AppDialogs वापरतात — theme consistent राहतो.
+/// बाकी files मध्ये काहीही बदल नाही करायला लागत.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 
 import '../services/network_helper.dart';
+import '../services/api_service.dart'; // ApiException साठी
+import 'app_dialogs.dart'; // ⬅️ हे एकच import add केले
 
-/// Show error snackbar
+// ─────────────────────────────────────────────────────────────
+// SNACKBAR HELPERS
+// हे functions तसेच आहेत — आत फक्त AppDialogs वापरतो
+// त्यामुळे login_screen, change_password_screen — सगळे
+// आपोआप नवीन themed snackbars दाखवतील
+// ─────────────────────────────────────────────────────────────
+
+/// ❌ Error snackbar — persistent, X button ने dismiss
 ///
-/// Displays an error message as a snackbar
+/// AppColors.red + light border
+/// duration parameter आता ignore होतो (AppDialogs handle करतो)
 void showErrorSnackBar(
-  BuildContext context,
-  String message, {
-  Duration duration = const Duration(seconds: 4),
-}) {
-  if (!context.mounted) return;
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-      backgroundColor: Colors.red[700],
-      behavior: SnackBarBehavior.floating,
-      duration: duration,
-      action: SnackBarAction(
-        label: 'Dismiss',
-        textColor: Colors.white,
-        onPressed: () {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        },
-      ),
-    ),
-  );
+    BuildContext context,
+    String message, {
+      Duration duration = const Duration(seconds: 4), // backward compat साठी ठेवला
+    }) {
+  AppDialogs.showError(context, message);
 }
 
-/// Show success snackbar
+/// ✅ Success snackbar — 2.5s auto dismiss, no X button
 ///
-/// Displays a success message as a snackbar
+/// AppColors.primary navy + cyan border
 void showSuccessSnackBar(
-  BuildContext context,
-  String message, {
-  Duration duration = const Duration(seconds: 3),
-}) {
-  if (!context.mounted) return;
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-      backgroundColor: Colors.green[700],
-      behavior: SnackBarBehavior.floating,
-      duration: duration,
-    ),
-  );
+    BuildContext context,
+    String message, {
+      Duration duration = const Duration(seconds: 3), // backward compat साठी ठेवला
+    }) {
+  AppDialogs.showSuccess(context, message);
 }
 
-/// Show info snackbar
+/// ℹ️ Info snackbar — 3s auto dismiss
 ///
-/// Displays an info message as a snackbar
+/// AppColors.primaryLight + cyan border
 void showInfoSnackBar(
-  BuildContext context,
-  String message, {
-  Duration duration = const Duration(seconds: 3),
-}) {
-  if (!context.mounted) return;
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-      backgroundColor: Colors.blue[700],
-      behavior: SnackBarBehavior.floating,
-      duration: duration,
-    ),
-  );
+    BuildContext context,
+    String message, {
+      Duration duration = const Duration(seconds: 3), // backward compat साठी ठेवला
+    }) {
+  AppDialogs.showInfo(context, message);
 }
 
-/// Extract user-friendly error message from exception
+// ─────────────────────────────────────────────────────────────
+// ERROR MESSAGE EXTRACTOR — हे बदलले नाही
+// ─────────────────────────────────────────────────────────────
+
+/// Exception मधून user-friendly message काढा
 ///
-/// [error] - The exception or error object
-/// Returns a user-friendly error message
+/// [error] - Exception किंवा error object
+/// Returns user-friendly string
 String getErrorMessage(dynamic error) {
+  // ApiException — clean message directly वापरा, raw toString() नको
+  if (error is ApiException) {
+    return error.message;
+  }
+
   // Network errors
   if (NetworkHelper.isNetworkError(error)) {
     return NetworkHelper.getNetworkErrorMessage(error);
@@ -96,14 +84,11 @@ String getErrorMessage(dynamic error) {
     return error;
   }
 
-  // Generic error
+  // Generic
   return error?.toString() ?? 'An unexpected error occurred';
 }
 
-/// Extract error message from DioException
-///
-/// [error] - The DioException
-/// Returns user-friendly error message
+/// DioException मधून message काढा
 String _getDioErrorMessage(DioException error) {
   switch (error.type) {
     case DioExceptionType.connectionTimeout:
@@ -113,7 +98,6 @@ String _getDioErrorMessage(DioException error) {
     case DioExceptionType.receiveTimeout:
       return 'Server response timed out. Please try again.';
     case DioExceptionType.badResponse:
-      // HTTP status code errors
       switch (error.response?.statusCode) {
         case 400:
           return 'Invalid request. Please check your input.';
@@ -126,7 +110,7 @@ String _getDioErrorMessage(DioException error) {
         case 500:
           return 'Server error. Please try again later.';
         default:
-          return 'Request failed (Status: ${error.response?.statusCode})';
+          return 'Request failed (${error.response?.statusCode})';
       }
     case DioExceptionType.cancel:
       return 'Request was cancelled.';
@@ -138,34 +122,33 @@ String _getDioErrorMessage(DioException error) {
   }
 }
 
-/// Show error dialog
-///
-/// Displays an error message as a dialog
-Future<void> showErrorDialog(
-  BuildContext context,
-  String title,
-  String message,
-) async {
-  if (!context.mounted) return;
+// ─────────────────────────────────────────────────────────────
+// ERROR DIALOG — AppDialogs कडे redirect
+// ─────────────────────────────────────────────────────────────
 
-  await showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(title),
-      content: Text(message),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('OK'),
-        ),
-      ],
-    ),
+/// Error dialog दाखवा — AppDialogs थीम वापरतो
+///
+/// जुना signature तसाच ठेवला — कुठेही break होणार नाही
+Future<void> showErrorDialog(
+    BuildContext context,
+    String title,
+    String message,
+    ) async {
+  if (!context.mounted) return;
+  await AppDialogs.showErrorDialog(
+    context,
+    title: title,
+    message: message,
   );
 }
 
-/// Validation helpers
+// ─────────────────────────────────────────────────────────────
+// VALIDATION HELPERS — हे बदलले नाहीत
+// ─────────────────────────────────────────────────────────────
+
+/// Form validation helpers
 class ValidationHelper {
-  /// Validate email format
+  /// Email format validate करा
   static bool isValidEmail(String email) {
     final emailRegex = RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
@@ -173,45 +156,32 @@ class ValidationHelper {
     return emailRegex.hasMatch(email);
   }
 
-  /// Validate password strength
+  /// Password strength validate करा
   static bool isStrongPassword(String password) {
-    // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
     final passwordRegex = RegExp(
       r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$',
     );
     return passwordRegex.hasMatch(password);
   }
 
-  /// Get email validation error message
+  /// Email validation error message
   static String? validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Email is required';
-    }
-    if (!isValidEmail(value)) {
-      return 'Please enter a valid email';
-    }
+    if (value == null || value.isEmpty) return 'Email is required';
+    if (!isValidEmail(value)) return 'Please enter a valid email';
     return null;
   }
 
-  /// Get password validation error message
+  /// Password validation error message
   static String? validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Password is required';
-    }
-    if (value.length < 6) {
-      return 'Password must be at least 6 characters';
-    }
+    if (value == null || value.isEmpty) return 'Password is required';
+    if (value.length < 6) return 'Password must be at least 6 characters';
     return null;
   }
 
-  /// Get confirm password validation error message
+  /// Confirm password validation error message
   static String? validateConfirmPassword(String? value, String password) {
-    if (value == null || value.isEmpty) {
-      return 'Please confirm your password';
-    }
-    if (value != password) {
-      return 'Passwords do not match';
-    }
+    if (value == null || value.isEmpty) return 'Please confirm your password';
+    if (value != password) return 'Passwords do not match';
     return null;
   }
 }
