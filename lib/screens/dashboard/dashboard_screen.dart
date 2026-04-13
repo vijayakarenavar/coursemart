@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/certificate.dart';
+import '../../providers/certificate_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/course_provider.dart';
@@ -1027,64 +1029,258 @@ class _CourseProgressItem extends StatelessWidget {
 }
 
 // ── CERTIFICATES TAB ──────────────────────────────────────────────────────────
-class _CertificatesTab extends StatelessWidget {
+class _CertificatesTab extends StatefulWidget {
   const _CertificatesTab();
 
   @override
+  State<_CertificatesTab> createState() => _CertificatesTabState();
+}
+
+class _CertificatesTabState extends State<_CertificatesTab> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CertificateProvider>().fetchCertificates();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final hp = _Responsive.horizontalPadding(context);
+
     return Scaffold(
       backgroundColor: AppColors.bgOf(context),
-      body: Column(
-        children: [
-          _FloatingHeader(
-            title: '🏆 Certificates',
-            subtitle: 'Your earned certificates',
-          ),
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.cyanLight, Color(0xFFd0f5f4)],
-                        ),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: const Center(
-                        child: Text('🎖️',
-                            style: TextStyle(fontSize: 48)),
+      body: Consumer<CertificateProvider>(
+        builder: (context, cp, _) {
+          return RefreshIndicator(
+            onRefresh: () => cp.refresh(),
+            color: AppColors.cyan,
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _FloatingHeader(
+                  title: '🏆 Certificates',
+                  subtitle: 'Your earned certificates',
+                ),
+                if (cp.isLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgressIndicator(color: AppColors.cyan),
+                    ),
+                  )
+                else if (cp.hasError)
+                  Padding(
+                    padding: EdgeInsets.all(hp),
+                    child: Center(
+                      child: Text(
+                        cp.errorMessage ?? 'Failed to load certificates',
+                        style: TextStyle(color: AppColors.text2Of(context)),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                  )
+                else if (cp.certificates.isEmpty)
+                    _buildEmptyState(context)
+                  else
+                    ...cp.certificates.map(
+                          (cert) => _buildCertificateCard(context, cert, hp),
+                    ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.cyanLight, Color(0xFFd0f5f4)],
+                ),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: const Center(
+                child: Text('🎖️', style: TextStyle(fontSize: 48)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No certificates yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: AppColors.textOf(context),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Complete your courses to earn certificates!',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.text2Of(context),
+                height: 1.6,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCertificateCard(
+      BuildContext context, Certificate cert, double hp) {
+    return Container(
+      margin: EdgeInsets.fromLTRB(hp, 0, hp, 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.cardOf(context),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top row
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.cyan, AppColors.cyanDark],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Center(
+                  child: Text('🏆', style: TextStyle(fontSize: 22)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      'No certificates yet',
+                      cert.courseTitle,
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
                         color: AppColors.textOf(context),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 2),
                     Text(
-                      'Complete your courses to earn certificates and showcase your skills!',
+                      cert.certificateNumber,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 11,
                         color: AppColors.text2Of(context),
-                        height: 1.6,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
+              Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.cyan,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Grade ${cert.grade}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Divider(
+            height: 1,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white.withOpacity(0.08)
+                : const Color(0xFFEEF0F5),
+          ),
+          const SizedBox(height: 12),
+          // Details
+          Row(
+            children: [
+              _certDetail(context, '📊 Score', '${cert.percentage.toStringAsFixed(1)}%'),
+              const SizedBox(width: 16),
+              _certDetail(context, '📅 Issued', cert.formattedDate),
+              const SizedBox(width: 16),
+              _certDetail(context, '✅ Status', cert.status.toUpperCase()),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Verification code
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.cyanLight,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.verified_outlined,
+                    size: 14, color: AppColors.cyan),
+                const SizedBox(width: 6),
+                Text(
+                  'Verification: ${cert.verificationCode}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.cyan,
+                  ),
+                ),
+              ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _certDetail(BuildContext context, String label, String value) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style:
+              TextStyle(fontSize: 10, color: AppColors.text2Of(context))),
+          const SizedBox(height: 2),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textOf(context))),
         ],
       ),
     );

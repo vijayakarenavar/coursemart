@@ -74,23 +74,13 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
       children: [
         _buildHeader(context, course),
         Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
             children: [
-              Expanded(
-                flex: 4,
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [_buildCourseInfoCard(context, course), const SizedBox(height: 16)],
-                ),
-              ),
-              Expanded(
-                flex: 6,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
-                  children: [_buildLecturesCard(context), const SizedBox(height: 16)],
-                ),
-              ),
+              _buildCourseInfoCard(context, course),
+              const SizedBox(height: 16),
+              _buildLecturesCard(context),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -255,23 +245,55 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     );
   }
 
-  Widget _buildLectureTile(BuildContext context, Lecture lecture) {
+  Widget _buildLectureTile(BuildContext context, Lecture lecture)  {
     final isReady = lecture.isReady;
     return GestureDetector(
-      onTap: isReady ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => VideoPlayerScreen(lectureId: lecture.id))) : null,
+      // ✅ isReady नाही — failed असला तरी open होईल (notes साठी)
+      onTap: (isReady || lecture.isFailed)
+          ? () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => VideoPlayerScreen(lectureId: lecture.id)))
+          : null,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(color: AppColors.bgOf(context), borderRadius: BorderRadius.circular(14)),
+        decoration: BoxDecoration(
+            color: AppColors.bgOf(context), borderRadius: BorderRadius.circular(14)),
         child: Row(
           children: [
-            Container(width: 36, height: 36, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle), child: Center(child: Text('${lecture.lectureNumber}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white)))),
+            Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                child: Center(
+                    child: Text('${lecture.lectureNumber}',
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white)))),
             const SizedBox(width: 12),
-            Expanded(child: Text(lecture.topic, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textOf(context)), maxLines: 1, overflow: TextOverflow.ellipsis)),
+            Expanded(
+                child: Text(lecture.topic,
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textOf(context)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis)),
             Row(mainAxisSize: MainAxisSize.min, children: [
-              if (lecture.isFailed) ...[const Icon(Icons.cancel_outlined, size: 14, color: AppColors.red), const SizedBox(width: 4), const Text('Failed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.red))]
-              else if (isReady) ...[const Icon(Icons.play_circle_outline_rounded, size: 14, color: AppColors.cyan), const SizedBox(width: 4), const Text('Watch', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.cyan))]
-              else ...[const Icon(Icons.hourglass_empty_rounded, size: 14, color: AppColors.text2), const SizedBox(width: 4), Text(lecture.isProcessing ? 'Processing' : 'Uploading', style: const TextStyle(fontSize: 12, color: AppColors.text2))],
+              if (lecture.isFailed) ...[
+                const Icon(Icons.cancel_outlined, size: 14, color: AppColors.red),
+                const SizedBox(width: 4),
+                const Text('Failed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.red))
+              ] else if (isReady) ...[
+                const Icon(Icons.play_circle_outline_rounded, size: 14, color: AppColors.cyan),
+                const SizedBox(width: 4),
+                const Text('Watch', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.cyan))
+              ] else ...[
+                const Icon(Icons.hourglass_empty_rounded, size: 14, color: AppColors.text2),
+                const SizedBox(width: 4),
+                Text(lecture.isProcessing ? 'Processing' : 'Uploading',
+                    style: const TextStyle(fontSize: 12, color: AppColors.text2))
+              ],
               const SizedBox(width: 6),
               Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.text2Of(context)),
             ]),

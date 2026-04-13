@@ -9,6 +9,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../config/api_config.dart';
+import '../models/certificate.dart';
 import '../models/student.dart';
 import '../models/course.dart';
 import '../models/lecture.dart';
@@ -365,6 +366,66 @@ class ApiService {
         message: e.message ?? 'Network error during lecture details fetch',
         statusCode: e.response?.statusCode,
       );
+    }
+  }
+
+  // ==================== CERTIFICATE APIs ====================
+
+  /// Get all certificates
+  Future<List<Certificate>> getCertificates() async {
+    try {
+      final response = await _dio.get('/student/certificates');
+
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final certsData = data['certificates'] as List<dynamic>?;
+        return certsData
+            ?.map((c) => Certificate.fromJson(c))
+            .toList() ??
+            [];
+      } else if (response.statusCode == 401) {
+        await _secureStorage.clearAuthToken();
+        onUnauthorized?.call();
+        throw const ApiException(
+            message: 'Session expired. Please login again.', statusCode: 401);
+      } else {
+        final message = _extractErrorMessage(response.data);
+        throw ApiException(
+            message: message ?? 'Failed to load certificates',
+            statusCode: response.statusCode);
+      }
+    } on DioException catch (e) {
+      throw ApiException(
+          message: e.message ?? 'Network error',
+          statusCode: e.response?.statusCode);
+    }
+  }
+
+  /// Get certificate by ID
+  Future<Certificate> getCertificateById(String certId) async {
+    try {
+      final response = await _dio.get('/student/certificates/$certId');
+
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final certData = data['certificate'] as Map<String, dynamic>?;
+        if (certData != null) return Certificate.fromJson(certData);
+        throw const ApiException(message: 'Invalid certificate data');
+      } else if (response.statusCode == 401) {
+        await _secureStorage.clearAuthToken();
+        onUnauthorized?.call();
+        throw const ApiException(
+            message: 'Session expired. Please login again.', statusCode: 401);
+      } else {
+        final message = _extractErrorMessage(response.data);
+        throw ApiException(
+            message: message ?? 'Failed to load certificate',
+            statusCode: response.statusCode);
+      }
+    } on DioException catch (e) {
+      throw ApiException(
+          message: e.message ?? 'Network error',
+          statusCode: e.response?.statusCode);
     }
   }
 

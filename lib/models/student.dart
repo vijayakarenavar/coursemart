@@ -28,16 +28,28 @@ class Student {
   ///
   /// Handles null safety and provides default values
   factory Student.fromJson(Map<String, dynamic> json) {
+    // ✅ collegeId object मधून name काढा
+    String collegeName = 'Unknown College';
+    if (json['collegeId'] != null) {
+      if (json['collegeId'] is Map) {
+        collegeName = json['collegeId']['name'] ?? 'Unknown College';
+      } else if (json['collegeId'] is String) {
+        collegeName = json['collegeId'];
+      }
+    } else if (json['collegeName'] != null) {
+      collegeName = json['collegeName'];
+    }
+
     return Student(
       id: json['_id'] ?? json['id'] ?? '',
       name: json['name'] ?? 'Unknown',
       rollNumber: json['rollNumber'] ?? '',
       email: json['email'] ?? '',
-      collegeName: json['collegeName'] ?? 'Unknown College',
+      collegeName: collegeName,
       enrolledCourses: json['enrolledCourses'] != null
           ? (json['enrolledCourses'] as List)
-                .map((course) => EnrolledCourse.fromJson(course))
-                .toList()
+          .map((course) => EnrolledCourse.fromJson(course))
+          .toList()
           : [],
     );
   }
