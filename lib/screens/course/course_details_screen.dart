@@ -38,7 +38,9 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.light),
+      value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light),
       child: Scaffold(
         backgroundColor: AppColors.bgOf(context),
         body: isLandscape
@@ -48,7 +50,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     );
   }
 
-  // ── Portrait ──────────────────────────────────────────────────────────────
   Widget _buildPortrait(BuildContext context, course) {
     return Column(
       children: [
@@ -68,7 +69,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     );
   }
 
-  // ── Landscape: header full width, content 2 columns ──────────────────────
   Widget _buildLandscape(BuildContext context, course) {
     return Column(
       children: [
@@ -102,16 +102,30 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
-                      width: 36, height: 36,
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-                      child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18),
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12)),
+                      child: const Icon(Icons.arrow_back_rounded,
+                          color: Colors.white, size: 18),
                     ),
                   ),
                   const Spacer(),
                   RichText(
                     text: const TextSpan(children: [
-                      TextSpan(text: 'Course', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white)),
-                      TextSpan(text: 'Mart', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.cyan)),
+                      TextSpan(
+                          text: 'Course',
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white)),
+                      TextSpan(
+                          text: 'Mart',
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.cyan)),
                     ]),
                   ),
                   const Spacer(),
@@ -123,34 +137,66 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20)),
                 child: Row(
                   children: [
                     Container(
-                      width: 64, height: 64,
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(14)),
                       child: course != null && course.thumbnail.isNotEmpty
-                          ? ClipRRect(borderRadius: BorderRadius.circular(14), child: CachedNetworkImage(imageUrl: ApiConfig.buildMediaUrl(course.thumbnail), fit: BoxFit.cover, errorWidget: (_, __, ___) => const Icon(Icons.menu_book_rounded, color: Colors.white54, size: 28)))
-                          : const Icon(Icons.menu_book_rounded, color: Colors.white54, size: 28),
+                          ? ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: CachedNetworkImage(
+                              imageUrl: ApiConfig.buildMediaUrl(
+                                  course.thumbnail),
+                              fit: BoxFit.cover,
+                              errorWidget: (_, _, _) => const Icon(
+                                  Icons.menu_book_rounded,
+                                  color: Colors.white54,
+                                  size: 28)))
+                          : const Icon(Icons.menu_book_rounded,
+                          color: Colors.white54, size: 28),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(course?.title ?? 'Course Details', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(course?.title ?? 'Course Details',
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
                           if (course?.description.isNotEmpty ?? false) ...[
                             const SizedBox(height: 2),
-                            Text(course?.description ?? '', style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            Text(course?.description ?? '',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white.withOpacity(0.6)),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis),
                           ],
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              _buildChip(Icons.access_time_rounded, '${course?.duration ?? 0} Hours'),
+                              // ✅ 0 Hours लपवलं
+                              if ((course?.duration ?? 0) > 0) ...[
+                                _buildChip(Icons.access_time_rounded,
+                                    '${course!.duration} hrs'),
+                                const SizedBox(width: 6),
+                              ],
+                              _buildChip(Icons.check_circle_outline_rounded,
+                                  '${course?.completedLectures ?? 0}/${course?.totalLectures ?? 0}'),
                               const SizedBox(width: 6),
-                              _buildChip(Icons.check_circle_outline_rounded, '${course?.completedLectures ?? 0}/${course?.totalLectures ?? 0}'),
-                              const SizedBox(width: 6),
-                              _buildChip(Icons.bar_chart_rounded, '${course?.progress ?? 0}%'),
+                              _buildChip(Icons.bar_chart_rounded,
+                                  '${course?.progress ?? 0}%'),
                             ],
                           ),
                         ],
@@ -168,11 +214,17 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
 
   Widget _buildChip(IconData icon, String label) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
+    decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20)),
     child: Row(mainAxisSize: MainAxisSize.min, children: [
       Icon(icon, size: 12, color: AppColors.cyan),
       const SizedBox(width: 4),
-      Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+      Text(label,
+          style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.white)),
     ]),
   );
 
@@ -183,39 +235,70 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardOf(context),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 2))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Course Info', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.textOf(context))),
+          Text('Course Info',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.textOf(context))),
           const SizedBox(height: 12),
-          Divider(height: 1, color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.08) : const Color(0xFFEEF0F5)),
+          Divider(
+              height: 1,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withOpacity(0.08)
+                  : const Color(0xFFEEF0F5)),
           const SizedBox(height: 12),
-          _buildInfoRow(context, 'Duration', '${course.duration} Hours'),
-          const SizedBox(height: 10),
+          // ✅ 0 Hours लपवलं
+          if (course.duration > 0) ...[
+            _buildInfoRow(context, 'Duration', '${course.duration} Hours'),
+            const SizedBox(height: 10),
+          ],
           _buildInfoRow(context, 'Lectures', '${course.totalLectures}'),
           const SizedBox(height: 10),
           _buildInfoRow(context, 'Progress', '${course.progress}%'),
           const SizedBox(height: 14),
           ClipRRect(
             borderRadius: BorderRadius.circular(100),
-            child: LinearProgressIndicator(value: course.progressDecimal, minHeight: 8, backgroundColor: AppColors.progressBarBgOf(context), valueColor: const AlwaysStoppedAnimation(AppColors.cyan)),
+            child: LinearProgressIndicator(
+                value: course.progressDecimal,
+                minHeight: 8,
+                backgroundColor: AppColors.progressBarBgOf(context),
+                valueColor:
+                const AlwaysStoppedAnimation(AppColors.cyan)),
           ),
           const SizedBox(height: 8),
-          Text('${course.completedLectures} of ${course.totalLectures} lectures completed', style: TextStyle(fontSize: 11, color: AppColors.text2Of(context))),
+          Text(
+              '${course.completedLectures} of ${course.totalLectures} lectures completed',
+              style: TextStyle(
+                  fontSize: 11, color: AppColors.text2Of(context))),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(BuildContext context, String label, String value) => Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Text(label, style: TextStyle(fontSize: 14, color: AppColors.text2Of(context))),
-      Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textOf(context))),
-    ],
-  );
+  Widget _buildInfoRow(BuildContext context, String label, String value) =>
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  fontSize: 14, color: AppColors.text2Of(context))),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textOf(context))),
+        ],
+      );
 
   Widget _buildLecturesCard(BuildContext context) {
     return Container(
@@ -223,21 +306,54 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardOf(context),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 2))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Lectures', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.textOf(context))),
+          Text('Lectures',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.textOf(context))),
           const SizedBox(height: 12),
-          Divider(height: 1, color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.08) : const Color(0xFFEEF0F5)),
+          Divider(
+              height: 1,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withOpacity(0.08)
+                  : const Color(0xFFEEF0F5)),
           const SizedBox(height: 8),
           Consumer<LectureProvider>(
             builder: (context, lp, _) {
-              if (lp.isLoading && lp.lectureCount == 0) return const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.cyan)));
-              if (lp.hasError && lp.lectureCount == 0) return EmptyState.error(message: lp.errorMessage ?? 'Failed to load lectures', onRetry: () => context.read<LectureProvider>().refresh());
+              if (lp.isLoading && lp.lectureCount == 0) {
+                return const Center(
+                    child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator(
+                            color: AppColors.cyan)));
+              }
+              if (lp.hasError && lp.lectureCount == 0) {
+                return EmptyState.error(
+                    message:
+                    lp.errorMessage ?? 'Failed to load lectures',
+                    onRetry: () =>
+                        context.read<LectureProvider>().refresh());
+              }
               if (lp.lectures.isEmpty) return EmptyState.noLectures();
-              return Column(children: lp.lectures.map((l) => _buildLectureTile(context, l)).toList());
+              // ✅ Serial number 1,2,3...
+              return Column(
+                children: lp.lectures
+                    .asMap()
+                    .entries
+                    .map((entry) => _buildLectureTile(
+                    context, entry.value, entry.key + 1))
+                    .toList(),
+              );
             },
           ),
         ],
@@ -245,57 +361,82 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     );
   }
 
-  Widget _buildLectureTile(BuildContext context, Lecture lecture)  {
+  // ✅ serialNo parameter
+  Widget _buildLectureTile(
+      BuildContext context, Lecture lecture, int serialNo) {
     final isReady = lecture.isReady;
     return GestureDetector(
-      // ✅ isReady नाही — failed असला तरी open होईल (notes साठी)
       onTap: (isReady || lecture.isFailed)
           ? () => Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (_) => VideoPlayerScreen(lectureId: lecture.id)))
+              builder: (_) =>
+                  VideoPlayerScreen(lectureId: lecture.id)))
           : null,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding:
+        const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-            color: AppColors.bgOf(context), borderRadius: BorderRadius.circular(14)),
+            color: AppColors.bgOf(context),
+            borderRadius: BorderRadius.circular(14)),
         child: Row(
           children: [
             Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-                child: Center(
-                    child: Text('${lecture.lectureNumber}',
-                        style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white)))),
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                  color: AppColors.primary, shape: BoxShape.circle),
+              child: Center(
+                // ✅ 1, 2, 3, 4...
+                child: Text('$serialNo',
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white)),
+              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
-                child: Text(lecture.topic,
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textOf(context)),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis)),
+              child: Text(lecture.topic,
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textOf(context)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
+            ),
             Row(mainAxisSize: MainAxisSize.min, children: [
               if (lecture.isFailed) ...[
-                const Icon(Icons.cancel_outlined, size: 14, color: AppColors.red),
+                const Icon(Icons.cancel_outlined,
+                    size: 14, color: AppColors.red),
                 const SizedBox(width: 4),
-                const Text('Failed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.red))
+                const Text('Failed',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.red))
               ] else if (isReady) ...[
-                const Icon(Icons.play_circle_outline_rounded, size: 14, color: AppColors.cyan),
+                const Icon(Icons.play_circle_outline_rounded,
+                    size: 14, color: AppColors.cyan),
                 const SizedBox(width: 4),
-                const Text('Watch', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.cyan))
+                const Text('Watch',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.cyan))
               ] else ...[
-                const Icon(Icons.hourglass_empty_rounded, size: 14, color: AppColors.text2),
+                const Icon(Icons.hourglass_empty_rounded,
+                    size: 14, color: AppColors.text2),
                 const SizedBox(width: 4),
-                Text(lecture.isProcessing ? 'Processing' : 'Uploading',
-                    style: const TextStyle(fontSize: 12, color: AppColors.text2))
+                Text(
+                    lecture.isProcessing ? 'Processing' : 'Uploading',
+                    style:
+                    const TextStyle(fontSize: 12, color: AppColors.text2))
               ],
               const SizedBox(width: 6),
-              Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.text2Of(context)),
+              Icon(Icons.chevron_right_rounded,
+                  size: 18, color: AppColors.text2Of(context)),
             ]),
           ],
         ),

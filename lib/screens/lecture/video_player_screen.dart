@@ -89,10 +89,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     } catch (e) {
       if (mounted) showErrorSnackBar(context, 'Failed to download notes: ${getErrorMessage(e)}');
     } finally {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _isDownloadingNotes = false;
         _downloadProgress = 0.0;
       });
+      }
     }
   }
 

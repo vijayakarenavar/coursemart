@@ -26,7 +26,7 @@ class ProfileScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           Consumer<AuthProvider>(
-            builder: (_, auth, __) => Padding(
+            builder: (_, auth, _) => Padding(
               padding: const EdgeInsets.only(right: 14),
               child: CircleAvatar(
                 radius: 16,
@@ -102,7 +102,7 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _buildAvatarHeader(BuildContext context) {
     return Consumer<AuthProvider>(
-      builder: (_, auth, __) => Container(
+      builder: (_, auth, _) => Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(16, 28, 16, 36),
         decoration: const BoxDecoration(
@@ -143,7 +143,7 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildInfoCard(BuildContext context, double hp) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Consumer<AuthProvider>(
-      builder: (_, auth, __) {
+      builder: (_, auth, _) {
         final student = auth.student;
         if (student == null) return const SizedBox.shrink();
         return Container(

@@ -42,8 +42,12 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
   @override
   void dispose() {
     _countdown?.cancel();
-    for (final c in _ctrl) c.dispose();
-    for (final f in _focus) f.dispose();
+    for (final c in _ctrl) {
+      c.dispose();
+    }
+    for (final f in _focus) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -83,7 +87,9 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
     } catch (e) {
       if (!mounted) return;
       showErrorSnackBar(context, getErrorMessage(e));
-      for (final c in _ctrl) c.clear();
+      for (final c in _ctrl) {
+        c.clear();
+      }
       setState(() {});
       _focus[0].requestFocus();
     } finally {
@@ -98,7 +104,9 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
       await context.read<AuthProvider>().sendForgotPasswordOtp(email: widget.email);
       if (!mounted) return;
       showSuccessSnackBar(context, 'OTP resent to ${widget.email}');
-      for (final c in _ctrl) c.clear();
+      for (final c in _ctrl) {
+        c.clear();
+      }
       setState(() {});
       _focus[0].requestFocus();
       _startTimer();

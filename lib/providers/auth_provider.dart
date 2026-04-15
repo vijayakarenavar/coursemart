@@ -201,8 +201,4 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = message;
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }
