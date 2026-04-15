@@ -13,6 +13,8 @@ import '../../utils/app_colors.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/download_manager.dart';
 import '../../widgets/empty_state.dart';
+import 'PdfViewerScreen.dart';
+
 
 class VideoPlayerScreen extends StatefulWidget {
   final String lectureId;
@@ -67,33 +69,65 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     }
   }
 
+  // ✅ Updated _downloadNotes — app मध्येच open होईल
   Future<void> _downloadNotes() async {
     if (_lecture?.notesUrl == null || _lecture!.notesUrl!.isEmpty) {
       showInfoSnackBar(context, 'Notes not available for this lecture');
       return;
     }
+
+    final fileName = 'notes_lecture_${_lecture!.lectureNumber}.pdf';
+
+    // ✅ Already downloaded असेल तर directly open करा
+    final existingPath = await DownloadManager().getExistingFilePath(fileName);
+    if (existingPath != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PdfViewerScreen(
+            filePath: existingPath,
+            title: 'Lecture ${_lecture!.lectureNumber} Notes',
+          ),
+        ),
+      );
+      return;
+    }
+
+    // ✅ Download करा
     setState(() {
       _isDownloadingNotes = true;
       _downloadProgress = 0.0;
     });
+
     try {
-      final fileName = 'notes_lecture_${_lecture!.lectureNumber}.pdf';
-      await DownloadManager().downloadAndOpen(
+      final filePath = await DownloadManager().downloadFile(
         url: _lecture!.notesUrl!,
         fileName: fileName,
         onProgress: (received, total) {
           if (mounted) setState(() => _downloadProgress = received / total);
         },
       );
-      if (mounted) showSuccessSnackBar(context, 'Notes opened successfully!');
+
+      if (!mounted) return;
+
+      // ✅ App मध्येच PDF उघडा
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PdfViewerScreen(
+            filePath: filePath,
+            title: 'Lecture ${_lecture!.lectureNumber} Notes',
+          ),
+        ),
+      );
     } catch (e) {
       if (mounted) showErrorSnackBar(context, 'Failed to download notes: ${getErrorMessage(e)}');
     } finally {
       if (mounted) {
         setState(() {
-        _isDownloadingNotes = false;
-        _downloadProgress = 0.0;
-      });
+          _isDownloadingNotes = false;
+          _downloadProgress = 0.0;
+        });
       }
     }
   }
@@ -116,7 +150,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // ✅ YoutubePlayerBuilder एकदाच — सगळ्यात वर
     return YoutubePlayerBuilder(
       player: YoutubePlayer(
         controller: _controller ?? YoutubePlayerController(initialVideoId: 'dQw4w9WgXcQ'),
@@ -154,7 +187,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       builder: (context, orientation) {
         final isLandscape = orientation == Orientation.landscape;
 
-        // 📱 Landscape → fullscreen
         if (isLandscape && _lecture!.hasVideo && _controller != null) {
           return Container(
             color: Colors.black,
@@ -162,7 +194,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           );
         }
 
-        // 📱 Portrait → Normal layout
         return Column(
           children: [
             _buildTopBar(context),
@@ -313,8 +344,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         child: Column(children: [
           _buildDetailRow(context, Icons.menu_book_rounded, 'Topic', _lecture!.topic),
           const SizedBox(height: 10),
-          _buildDetailRow(
-              context, Icons.person_outline_rounded, 'Trainer', _lecture!.trainerName),
+          _buildDetailRow(context, Icons.person_outline_rounded, 'Trainer', _lecture!.trainerName),
           const SizedBox(height: 10),
           _buildDetailRow(context, Icons.calendar_today_rounded, 'Upload Date',
               _lecture!.formattedUploadDate),
@@ -358,13 +388,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                     color: AppColors.red.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child:
-                  const Icon(Icons.picture_as_pdf_rounded, color: AppColors.red, size: 20),
+                  child: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.red, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Download Lecture Notes',
+                    Text('View Lecture Notes', // ✅ "Download" → "View" केलं
                         style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -381,8 +410,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         strokeWidth: 2,
                         value: _downloadProgress > 0 ? _downloadProgress : null,
                         color: AppColors.red))
-                    : Icon(Icons.open_in_new_rounded,
-                    size: 18, color: AppColors.text2Of(context)),
+                    : Icon(Icons.arrow_forward_ios_rounded, // ✅ Icon बदलला
+                    size: 16, color: AppColors.text2Of(context)),
               ],
             ),
           ),
@@ -422,8 +451,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                           style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color:
-                              isCurrent ? AppColors.cyan : AppColors.textOf(context)),
+                              color: isCurrent ? AppColors.cyan : AppColors.textOf(context)),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis),
                     ),
@@ -496,8 +524,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Icon(Icons.chevron_left_rounded,
                         size: 18,
-                        color:
-                        hasPrev ? AppColors.textOf(context) : AppColors.text2Of(context)),
+                        color: hasPrev ? AppColors.textOf(context) : AppColors.text2Of(context)),
                     Text('Previous',
                         style: TextStyle(
                             fontSize: 13,
