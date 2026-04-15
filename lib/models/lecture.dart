@@ -39,7 +39,7 @@ class Lecture {
     DateTime uploadedDate;
     if (json['uploadedAt'] != null) {
       if (json['uploadedAt'] is String) {
-        uploadedDate = DateTime.tryParse(json['uploadedAt']) ?? DateTime.now(); // ✅ fixed
+        uploadedDate = DateTime.tryParse(json['uploadedAt']) ?? DateTime.now();
       } else if (json['uploadedAt'] is DateTime) {
         uploadedDate = json['uploadedAt'];
       } else {
@@ -49,6 +49,16 @@ class Lecture {
       uploadedDate = DateTime.now();
     }
 
+    // parts array मधून youtubeVideoId काढा
+    String? youtubeVideoId = json['youtubeVideoId'];
+    if (youtubeVideoId == null) {
+      final parts = json['parts'] as List<dynamic>?;
+      if (parts != null && parts.isNotEmpty) {
+        final firstPart = parts[0] as Map<String, dynamic>?;
+        youtubeVideoId = firstPart?['youtubeVideoId'] as String?;
+      }
+    }
+
     return Lecture(
       id: json['_id'] ?? json['id'] ?? '',
       lectureNumber: json['lectureNumber'] ?? 0,
@@ -56,7 +66,7 @@ class Lecture {
       videoStatus: json['videoStatus'] ?? VideoStatus.unknown,
       uploadedAt: uploadedDate,
       trainerName: json['trainerName'] ?? 'Unknown Trainer',
-      youtubeVideoId: json['youtubeVideoId'],
+      youtubeVideoId: youtubeVideoId,
       notesUrl: json['notesUrl'],
       courseTitle: json['courseTitle'],
     );
