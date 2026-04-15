@@ -362,21 +362,21 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   }
 
   // ✅ serialNo parameter
+  // ✅ serialNo parameter
   Widget _buildLectureTile(
       BuildContext context, Lecture lecture, int serialNo) {
     final isReady = lecture.isReady;
+
     return GestureDetector(
-      onTap: (isReady || lecture.isFailed)
-          ? () => Navigator.push(
+      // ✅ आता कोणत्याही स्टेटसवर (Processing/Uploading/Failed/Ready) क्लिक केल्यावर व्हिडिओ पेजवर जाईल
+      onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
               builder: (_) =>
-                  VideoPlayerScreen(lectureId: lecture.id)))
-          : null,
+                  VideoPlayerScreen(lectureId: lecture.id))),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding:
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
             color: AppColors.bgOf(context),
             borderRadius: BorderRadius.circular(14)),
@@ -388,7 +388,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
               decoration: const BoxDecoration(
                   color: AppColors.primary, shape: BoxShape.circle),
               child: Center(
-                // ✅ 1, 2, 3, 4...
                 child: Text('$serialNo',
                     style: const TextStyle(
                         fontSize: 14,
@@ -431,8 +430,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                 const SizedBox(width: 4),
                 Text(
                     lecture.isProcessing ? 'Processing' : 'Uploading',
-                    style:
-                    const TextStyle(fontSize: 12, color: AppColors.text2))
+                    style: const TextStyle(fontSize: 12, color: AppColors.text2))
               ],
               const SizedBox(width: 6),
               Icon(Icons.chevron_right_rounded,

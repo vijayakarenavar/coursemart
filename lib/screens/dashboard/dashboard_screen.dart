@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/certificate.dart';
+import '../../models/exam_history.dart';
 import '../../providers/certificate_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../providers/auth_provider.dart';
@@ -1029,6 +1030,12 @@ class _CourseProgressItem extends StatelessWidget {
 }
 
 // ── CERTIFICATES TAB ──────────────────────────────────────────────────────────
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// REPLACE the existing _CertificatesTab in dashboard_screen.dart with this.
+// Also add the helper widgets at the bottom of that file.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ── CERTIFICATES TAB ──────────────────────────────────────────────────────────
 class _CertificatesTab extends StatefulWidget {
   const _CertificatesTab();
 
@@ -1036,13 +1043,23 @@ class _CertificatesTab extends StatefulWidget {
   State<_CertificatesTab> createState() => _CertificatesTabState();
 }
 
-class _CertificatesTabState extends State<_CertificatesTab> {
+class _CertificatesTabState extends State<_CertificatesTab>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CertificateProvider>().fetchCertificates();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -1056,42 +1073,127 @@ class _CertificatesTabState extends State<_CertificatesTab> {
           return RefreshIndicator(
             onRefresh: () => cp.refresh(),
             color: AppColors.cyan,
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _FloatingHeader(
-                  title: '🏆 Certificates',
-                  subtitle: 'Your earned certificates',
+            child: NestedScrollView(
+              headerSliverBuilder: (context, _) => [
+                SliverToBoxAdapter(
+                  child: _FloatingHeader(
+                    title: '🏆 Certificates',
+                    subtitle: 'Your earned certificates & exam history',
+                  ),
                 ),
-                if (cp.isLoading)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: CircularProgressIndicator(color: AppColors.cyan),
-                    ),
-                  )
-                else if (cp.hasError)
-                  Padding(
-                    padding: EdgeInsets.all(hp),
-                    child: Center(
-                      child: Text(
-                        cp.errorMessage ?? 'Failed to load certificates',
-                        style: TextStyle(color: AppColors.text2Of(context)),
-                      ),
-                    ),
-                  )
-                else if (cp.certificates.isEmpty)
-                    _buildEmptyState(context)
-                  else
-                    ...cp.certificates.map(
-                          (cert) => _buildCertificateCard(context, cert, hp),
-                    ),
-                const SizedBox(height: 20),
+                SliverToBoxAdapter(
+                  child: _buildTabBar(context, cp, hp),
+                ),
               ],
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  _CertificatesList(cp: cp, hp: hp),
+                  _ExamHistoryList(cp: cp, hp: hp),
+                ],
+              ),
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildTabBar(
+      BuildContext context, CertificateProvider cp, double hp) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(hp, 0, hp, 12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.cardOf(context),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: TabBar(
+          controller: _tabController,
+          indicator: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: Colors.transparent,
+          labelColor: Colors.white,
+          unselectedLabelColor: AppColors.text2Of(context),
+          labelStyle: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+          padding: const EdgeInsets.all(4),
+          tabs: [
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.workspace_premium_rounded, size: 15),
+                  const SizedBox(width: 6),
+                  Text('Certificates (${cp.certificatesEarned})'),
+                ],
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.bar_chart_rounded, size: 15),
+                  const SizedBox(width: 6),
+                  Text('Exam History (${cp.totalAttempts})'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Certificates List Sub-tab ─────────────────────────────────────────────────
+class _CertificatesList extends StatelessWidget {
+  final CertificateProvider cp;
+  final double hp;
+
+  const _CertificatesList({required this.cp, required this.hp});
+
+  @override
+  Widget build(BuildContext context) {
+    if (cp.isLoading) {
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.cyan));
+    }
+    if (cp.hasError) {
+      return Center(
+        child: Text(
+          cp.errorMessage ?? 'Failed to load',
+          style: TextStyle(color: AppColors.text2Of(context)),
+        ),
+      );
+    }
+    if (cp.certificates.isEmpty) {
+      return _buildEmptyState(context);
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.only(bottom: 20),
+      itemCount: cp.certificates.length,
+      itemBuilder: (context, i) =>
+          _CertificateCard(cert: cp.certificates[i], hp: hp),
     );
   }
 
@@ -1100,7 +1202,7 @@ class _CertificatesTabState extends State<_CertificatesTab> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               width: 100,
@@ -1111,9 +1213,8 @@ class _CertificatesTabState extends State<_CertificatesTab> {
                 ),
                 borderRadius: BorderRadius.circular(30),
               ),
-              child: const Center(
-                child: Text('🎖️', style: TextStyle(fontSize: 48)),
-              ),
+              child:
+              const Center(child: Text('🎖️', style: TextStyle(fontSize: 48))),
             ),
             const SizedBox(height: 16),
             Text(
@@ -1126,12 +1227,11 @@ class _CertificatesTabState extends State<_CertificatesTab> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Complete your courses to earn certificates!',
+              'Pass your exams to earn certificates!',
               style: TextStyle(
-                fontSize: 13,
-                color: AppColors.text2Of(context),
-                height: 1.6,
-              ),
+                  fontSize: 13,
+                  color: AppColors.text2Of(context),
+                  height: 1.6),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1139,9 +1239,17 @@ class _CertificatesTabState extends State<_CertificatesTab> {
       ),
     );
   }
+}
 
-  Widget _buildCertificateCard(
-      BuildContext context, Certificate cert, double hp) {
+// ── Certificate Card ──────────────────────────────────────────────────────────
+class _CertificateCard extends StatelessWidget {
+  final Certificate cert;
+  final double hp;
+
+  const _CertificateCard({required this.cert, required this.hp});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.fromLTRB(hp, 0, hp, 16),
       padding: const EdgeInsets.all(18),
@@ -1159,7 +1267,6 @@ class _CertificatesTabState extends State<_CertificatesTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row
           Row(
             children: [
               Container(
@@ -1167,13 +1274,11 @@ class _CertificatesTabState extends State<_CertificatesTab> {
                 height: 48,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [AppColors.cyan, AppColors.cyanDark],
-                  ),
+                      colors: [AppColors.cyan, AppColors.cyanDark]),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Center(
-                  child: Text('🏆', style: TextStyle(fontSize: 22)),
-                ),
+                    child: Text('🏆', style: TextStyle(fontSize: 22))),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1194,9 +1299,7 @@ class _CertificatesTabState extends State<_CertificatesTab> {
                     Text(
                       cert.certificateNumber,
                       style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.text2Of(context),
-                      ),
+                          fontSize: 11, color: AppColors.text2Of(context)),
                     ),
                   ],
                 ),
@@ -1227,18 +1330,18 @@ class _CertificatesTabState extends State<_CertificatesTab> {
                 : const Color(0xFFEEF0F5),
           ),
           const SizedBox(height: 12),
-          // Details
           Row(
             children: [
-              _certDetail(context, '📊 Score', '${cert.percentage.toStringAsFixed(1)}%'),
+              _certDetail(context, '📊 Score',
+                  '${cert.percentage.toStringAsFixed(1)}%'),
               const SizedBox(width: 16),
               _certDetail(context, '📅 Issued', cert.formattedDate),
               const SizedBox(width: 16),
-              _certDetail(context, '✅ Status', cert.status.toUpperCase()),
+              _certDetail(
+                  context, '✅ Status', cert.status.toUpperCase()),
             ],
           ),
           const SizedBox(height: 12),
-          // Verification code
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1251,12 +1354,15 @@ class _CertificatesTabState extends State<_CertificatesTab> {
                 const Icon(Icons.verified_outlined,
                     size: 14, color: AppColors.cyan),
                 const SizedBox(width: 6),
-                Text(
-                  'Verification: ${cert.verificationCode}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.cyan,
+                Expanded(
+                  child: Text(
+                    'Verification: ${cert.verificationCode}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.cyan,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -1273,8 +1379,8 @@ class _CertificatesTabState extends State<_CertificatesTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style:
-              TextStyle(fontSize: 10, color: AppColors.text2Of(context))),
+              style: TextStyle(
+                  fontSize: 10, color: AppColors.text2Of(context))),
           const SizedBox(height: 2),
           Text(value,
               style: TextStyle(
@@ -1287,6 +1393,408 @@ class _CertificatesTabState extends State<_CertificatesTab> {
   }
 }
 
+// ── Exam History Sub-tab ──────────────────────────────────────────────────────
+class _ExamHistoryList extends StatelessWidget {
+  final CertificateProvider cp;
+  final double hp;
+
+  const _ExamHistoryList({required this.cp, required this.hp});
+
+  @override
+  Widget build(BuildContext context) {
+    if (cp.isLoading) {
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.cyan));
+    }
+    if (cp.hasError) {
+      return Center(
+        child: Text(
+          cp.errorMessage ?? 'Failed to load',
+          style: TextStyle(color: AppColors.text2Of(context)),
+        ),
+      );
+    }
+    if (cp.examHistory.isEmpty) {
+      return Center(
+        child: Text(
+          'No exam attempts yet',
+          style:
+          TextStyle(fontSize: 14, color: AppColors.text2Of(context)),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: EdgeInsets.only(bottom: 20),
+      children: [
+        // ── Table ──
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: hp),
+          child: _ExamHistoryTable(history: cp.examHistory, hp: hp),
+        ),
+        const SizedBox(height: 16),
+        // ── Summary cards ──
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: hp),
+          child: _ExamSummaryRow(cp: cp),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Exam History Table ────────────────────────────────────────────────────────
+class _ExamHistoryTable extends StatelessWidget {
+  final List<ExamHistory> history;
+  final double hp;
+
+  const _ExamHistoryTable({required this.history, required this.hp});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerBg =
+    isDark ? const Color(0xFF1E2A3A) : const Color(0xFFF0F4FF);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardOf(context),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingRowColor: WidgetStateProperty.all(headerBg),
+            headingTextStyle: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textOf(context),
+            ),
+            dataTextStyle: TextStyle(
+              fontSize: 12,
+              color: AppColors.textOf(context),
+            ),
+            columnSpacing: 16,
+            horizontalMargin: 14,
+            dataRowMinHeight: 48,
+            dataRowMaxHeight: 56,
+            columns: const [
+              DataColumn(label: Text('Course')),
+              DataColumn(label: Text('Attempt')),
+              DataColumn(label: Text('Score')),
+              DataColumn(label: Text('Percentage')),
+              DataColumn(label: Text('Grade')),
+              DataColumn(label: Text('Status')),
+              DataColumn(label: Text('Date')),
+              DataColumn(label: Text('Certificate')),
+              DataColumn(label: Text('Actions')),
+            ],
+            rows: history.map((e) => _buildRow(context, e)).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  DataRow _buildRow(BuildContext context, ExamHistory e) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return DataRow(
+      cells: [
+        // Course
+        DataCell(
+          SizedBox(
+            width: 90,
+            child: Text(
+              e.courseTitle,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        // Attempt badge
+        DataCell(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '#${e.attemptNumber}',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ),
+        // Score
+        DataCell(Text('${e.score}/${e.totalMarks}')),
+        // Percentage
+        DataCell(
+          Text(
+            '${e.percentage.toStringAsFixed(1)}%',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: e.isPassed ? AppColors.green : AppColors.pink,
+            ),
+          ),
+        ),
+        // Grade badge
+        DataCell(
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: e.isPassed
+                  ? AppColors.cyan
+                  : (isDark
+                  ? const Color(0xFF3A2020)
+                  : const Color(0xFFFFE5E5)),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                e.grade,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: e.isPassed
+                      ? Colors.white
+                      : AppColors.pink,
+                ),
+              ),
+            ),
+          ),
+        ),
+        // Status
+        DataCell(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: e.isPassed
+                  ? AppColors.green.withOpacity(0.15)
+                  : AppColors.pink.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  e.isPassed ? Icons.check_circle : Icons.cancel,
+                  size: 12,
+                  color: e.isPassed ? AppColors.green : AppColors.pink,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  e.isPassed ? 'PASSED' : 'FAILED',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: e.isPassed ? AppColors.green : AppColors.pink,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Date
+        DataCell(Text(
+          e.formattedDate,
+          style: TextStyle(
+              fontSize: 11, color: AppColors.text2Of(context)),
+        )),
+        // Certificate status
+        DataCell(
+          e.hasCertificate
+              ? Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'Pending',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
+            ),
+          )
+              : Text('-',
+              style:
+              TextStyle(color: AppColors.text2Of(context))),
+        ),
+        // Actions
+        DataCell(
+          Row(
+            children: [
+              // View result
+              _ActionButton(
+                icon: Icons.bar_chart_rounded,
+                onTap: () {
+                  // Navigate to exam result screen
+                  // Navigator.push(context, MaterialPageRoute(
+                  //   builder: (_) => ExamResultScreen(examId: e.id),
+                  // ));
+                },
+              ),
+              if (e.isPassed) ...[
+                const SizedBox(width: 6),
+                // Generate / view certificate
+                _ActionButton(
+                  icon: Icons.workspace_premium_rounded,
+                  color: AppColors.cyan,
+                  onTap: () {
+                    // Navigate to certificate screen
+                    // Navigator.push(context, MaterialPageRoute(
+                    //   builder: (_) => CertificateScreen(examId: e.id),
+                    // ));
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Small action icon button ──────────────────────────────────────────────────
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color? color;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withOpacity(0.07)
+              : Colors.black.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          icon,
+          size: 15,
+          color: color ?? AppColors.text2Of(context),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Exam Summary Row ──────────────────────────────────────────────────────────
+class _ExamSummaryRow extends StatelessWidget {
+  final CertificateProvider cp;
+
+  const _ExamSummaryRow({required this.cp});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _SummaryCard(
+          label: 'Total Attempts',
+          value: '${cp.totalAttempts}',
+          color: AppColors.primary,
+        ),
+        const SizedBox(width: 10),
+        _SummaryCard(
+          label: 'Exams Passed',
+          value: '${cp.examsPassed}',
+          color: AppColors.green,
+        ),
+        const SizedBox(width: 10),
+        _SummaryCard(
+          label: 'Exams Failed',
+          value: '${cp.examsFailed}',
+          color: AppColors.pink,
+        ),
+        const SizedBox(width: 10),
+        _SummaryCard(
+          label: 'Certificates',
+          value: '${cp.certificatesEarned}',
+          color: AppColors.cyan,
+        ),
+      ],
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _SummaryCard({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.25)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: AppColors.text2Of(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 // ── Floating Header ───────────────────────────────────────────────────────────
 class _FloatingHeader extends StatelessWidget {
   final String title;

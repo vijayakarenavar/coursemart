@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 
 import '../config/api_config.dart';
 import '../models/certificate.dart';
+import '../models/exam_history.dart';
 import '../models/student.dart';
 import '../models/course.dart';
 import '../models/lecture.dart';
@@ -426,6 +427,28 @@ class ApiService {
       throw ApiException(
           message: e.message ?? 'Network error',
           statusCode: e.response?.statusCode);
+    }
+  }
+  /// GET /api/v1/student/exam/history
+  /// ✅ Endpoint confirmed working in Postman (200 OK)
+  /// ✅ Response key confirmed: "attempts"
+  Future<List<ExamHistory>> getExamHistory() async {
+    try {
+      final response = await _dio.get('/student/exam/history');
+      final data = response.data as Map<String, dynamic>;
+
+      final rawList = data['attempts'] as List<dynamic>?;
+      if (rawList == null || rawList.isEmpty) return [];
+
+      return rawList
+          .map((e) => ExamHistory.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      debugPrint('❌ getExamHistory: ${e.response?.statusCode} ${e.message}');
+      throw Exception('Failed to load exam history');
+    } catch (e) {
+      debugPrint('❌ getExamHistory unexpected: $e');
+      throw Exception('Unexpected error loading exam history');
     }
   }
 
