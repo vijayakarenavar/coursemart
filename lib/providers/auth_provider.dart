@@ -115,47 +115,32 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> sendForgotPasswordOtp({required String email}) async {
+  // जुने तीन methods (sendForgotPasswordOtp, verifyForgotPasswordOtp, resetPassword)
+// हे तिन्ही DELETE करा आणि हे दोन add करा:
+
+  /// Step 1 — Email पाठवा, resetToken परत येतो
+  Future<String> forgotPassword({required String email}) async {
     try {
-      // TODO: Backend endpoint milal ki uncomment kar
-      // await _apiService.sendForgotPasswordOtp(email: email);
-      await Future.delayed(const Duration(seconds: 1));
-      debugPrint('📧 OTP sent to $email (MOCK)');
+      final token = await _apiService.forgotPassword(email: email);
+      debugPrint('✅ Reset token received');
+      return token;
     } catch (e) {
-      debugPrint('❌ Send OTP error: $e');
+      debugPrint('❌ Forgot password error: $e');
       rethrow;
     }
   }
 
-  Future<void> verifyForgotPasswordOtp({
-    required String email,
-    required String otp,
-  }) async {
-    try {
-      // TODO: Backend endpoint milal ki uncomment kar
-      // await _apiService.verifyForgotPasswordOtp(email: email, otp: otp);
-      await Future.delayed(const Duration(seconds: 1));
-      debugPrint('✅ OTP verified (MOCK)');
-    } catch (e) {
-      debugPrint('❌ Verify OTP error: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> resetPassword({
-    required String email,
-    required String otp,
+  /// Step 2 — Token + नवीन password पाठवा
+  Future<void> resetPasswordWithToken({
+    required String token,
     required String newPassword,
   }) async {
     try {
-      // TODO: Backend endpoint milal ki uncomment kar
-      // await _apiService.resetPassword(
-      //   email: email,
-      //   otp: otp,
-      //   newPassword: newPassword,
-      // );
-      await Future.delayed(const Duration(seconds: 1));
-      debugPrint('🔑 Password reset for $email (MOCK)');
+      await _apiService.resetPasswordWithToken(
+        token: token,
+        newPassword: newPassword,
+      );
+      debugPrint('✅ Password reset successfully');
     } catch (e) {
       debugPrint('❌ Reset password error: $e');
       rethrow;

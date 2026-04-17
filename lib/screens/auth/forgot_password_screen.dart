@@ -2,13 +2,13 @@
 /// ✅ Dark Mode | ✅ Responsive | ✅ Safe Area | ✅ Landscape
 library;
 
+import 'package:coursemart_app/screens/auth/reset_password_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../utils/app_colors.dart';
 import '../../utils/error_handler.dart';
 import '../../providers/auth_provider.dart';
-import 'otp_verify_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -32,9 +32,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await context.read<AuthProvider>().sendForgotPasswordOtp(email: _emailController.text.trim());
+      // token directly मिळतो — OTP screen नाही
+      final token = await context
+          .read<AuthProvider>()
+          .forgotPassword(email: _emailController.text.trim());
+
       if (!mounted) return;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => OtpVerifyScreen(email: _emailController.text.trim())));
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ResetPasswordScreen(
+            token: token, // email नाही, token पाठवतो
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       showErrorSnackBar(context, getErrorMessage(e));
@@ -135,7 +147,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         const Text('Reset Your Password', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: Colors.white)),
         const SizedBox(height: 6),
         Text(
-          'Enter your registered email.\nWe\'ll send a 6-digit OTP to verify your identity.',
+          'Enter your registered email.\nWe\'ll send a password reset link to your account.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.5), height: 1.65),
         ),
@@ -212,7 +224,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             children: const [
               Icon(Icons.send_rounded, color: Colors.white, size: 17),
               SizedBox(width: 8),
-              Text('Send OTP  →', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+              Text('Send Reset Link  →', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
             ],
           ),
         ),

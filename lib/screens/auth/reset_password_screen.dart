@@ -10,9 +10,8 @@ import '../../utils/error_handler.dart';
 import '../../providers/auth_provider.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
-  final String email;
-  final String otp;
-  const ResetPasswordScreen({super.key, required this.email, required this.otp});
+  final String token;
+  const ResetPasswordScreen({super.key, required this.token});
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -38,7 +37,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await context.read<AuthProvider>().resetPassword(email: widget.email, otp: widget.otp, newPassword: _newPwdCtrl.text);
+      await context.read<AuthProvider>().resetPasswordWithToken(
+        token: widget.token,
+        newPassword: _newPwdCtrl.text,
+      );
       if (!mounted) return;
       showSuccessSnackBar(context, 'Password reset successfully! Please login.');
       Navigator.of(context).popUntil((route) => route.isFirst);

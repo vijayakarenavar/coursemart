@@ -18,32 +18,19 @@ import 'secure_storage.dart';
 import 'interceptors.dart';
 
 /// API Service class
-///
-/// Provides all API methods for the CourseMart app
-/// Uses singleton pattern to maintain single Dio instance
 class ApiService {
-  // Private constructor for singleton
   ApiService._internal();
 
-  /// Singleton instance
   static final ApiService _instance = ApiService._internal();
 
-  /// Get singleton instance
   factory ApiService() => _instance;
 
-  /// Dio HTTP client
   late final Dio _dio;
 
-  /// Secure storage for token management
   final SecureStorage _secureStorage = SecureStorage();
 
-  /// Callback for 401 unauthorized errors
-  /// Used to trigger auto-logout
   Function()? onUnauthorized;
 
-  /// Initialize Dio with interceptors
-  ///
-  /// Call this in app initialization or before first API call
   void init() {
     _dio = Dio(
       BaseOptions(
@@ -52,33 +39,19 @@ class ApiService {
         receiveTimeout: AppConstants.requestTimeout,
         sendTimeout: AppConstants.requestTimeout,
         validateStatus: (status) {
-          // Accept all status codes to handle them manually
           return status != null;
         },
       ),
     );
 
-    // Add interceptors
-    _dio.interceptors.add(AuthInterceptor(_secureStorage)); // Auth headers
-    _dio.interceptors.add(LoggingInterceptor()); // Debug logging
-
-    // Add retry interceptor (must be last to retry after other interceptors)
+    _dio.interceptors.add(AuthInterceptor(_secureStorage));
+    _dio.interceptors.add(LoggingInterceptor());
     _dio.interceptors.add(RetryInterceptor(dio: _dio));
   }
 
   // ==================== AUTH APIs ====================
 
   /// Login student
-  ///
-  /// [email] - Student email
-  /// [password] - Student password
-  /// Returns map with token and user data
-  ///
-  /// Example response:
-  /// {
-  ///   "token": "eyJhbGci...",
-  ///   "user": { "id": "...", "name": "...", "email": "..." }
-  /// }
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
@@ -92,7 +65,6 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
 
-        // Save token to secure storage
         final token = data['token'] as String?;
         if (token != null) {
           await _secureStorage.saveAuthToken(token);
@@ -101,28 +73,23 @@ class ApiService {
 
         return data;
       } else {
-        // Handle error response
         final message = _extractErrorMessage(response.data);
         throw ApiException(
-          message: message ?? 'Login failed',
+          message: message ?? 'Login failed. Please try again.',
           statusCode: response.statusCode,
         );
       }
     } on DioException catch (e) {
       throw ApiException(
-        message: e.message ?? 'Network error during login',
+        message: 'Could not login. Please check your internet and try again.',
         statusCode: e.response?.statusCode,
       );
     }
   }
 
   /// Logout student
-  ///
-  /// Clears token from secure storage
-  /// Calls server logout endpoint if token exists
   Future<void> logout() async {
     try {
-      // Check if token exists before calling server
       final token = await _secureStorage.getAuthToken();
       if (token != null) {
         final response = await _dio.post(ApiConfig.logout);
@@ -134,17 +101,12 @@ class ApiService {
     } catch (e) {
       debugPrint('⚠️ Logout error: $e');
     } finally {
-      // Always clear local token
       await _secureStorage.clearAuthToken();
       debugPrint('🗑️ Token cleared from secure storage');
     }
   }
 
   /// Change student password
-  ///
-  /// [currentPassword] - Current password
-  /// [newPassword] - New password
-  /// Returns success message
   Future<String> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -161,13 +123,71 @@ class ApiService {
       } else {
         final message = _extractErrorMessage(response.data);
         throw ApiException(
-          message: message ?? 'Failed to change password',
+          message: message ?? 'Could not change password. Please try again.',
           statusCode: response.statusCode,
         );
       }
     } on DioException catch (e) {
       throw ApiException(
-        message: e.message ?? 'Network error during password change',
+        message: 'Could not change password. Please try again.',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  // ==================== FORGOT PASSWORD APIs ====================
+
+  /// Send forgot password request — returns reset token
+  Future<String> forgotPassword({required String email}) async {
+    try {
+      final response = await _dio.post(
+        ApiConfig.forgotPassword, // '/auth/forgot-password'
+        data: {'email': email},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final token = data['resetToken'] as String?;
+        if (token != null) return token;
+        throw const ApiException(message: 'Reset token not received from server');
+      } else {
+        final message = _extractErrorMessage(response.data);
+        throw ApiException(
+          message: message ?? 'Could not send reset link. Please try again.',
+          statusCode: response.statusCode,
+        );
+      }
+    } on DioException catch (e) {
+      throw ApiException(
+        message: 'Could not send reset link. Please check your internet.',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  /// Reset password using token from forgot password
+  Future<void> resetPasswordWithToken({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth/reset-password/$token',
+        data: {'newPassword': newPassword},
+      );
+
+      if (response.statusCode == 200) {
+        return;
+      } else {
+        final message = _extractErrorMessage(response.data);
+        throw ApiException(
+          message: message ?? 'Could not reset password. Please try again.',
+          statusCode: response.statusCode,
+        );
+      }
+    } on DioException catch (e) {
+      throw ApiException(
+        message: 'Could not reset password. Please try again.',
         statusCode: e.response?.statusCode,
       );
     }
@@ -176,9 +196,6 @@ class ApiService {
   // ==================== STUDENT APIs ====================
 
   /// Get student profile
-  ///
-  /// Returns Student model with profile information
-  /// Used to validate token and display user info
   Future<Student> getProfile() async {
     try {
       final response = await _dio.get(ApiConfig.profile);
@@ -193,17 +210,16 @@ class ApiService {
           throw const ApiException(message: 'Invalid profile data from server');
         }
       } else if (response.statusCode == 401) {
-        // Token invalid - trigger logout
         await _secureStorage.clearAuthToken();
         onUnauthorized?.call();
         throw const ApiException(
-          message: 'Session expired. Please login again.',
+          message: 'Your session has expired. Please login again.',
           statusCode: 401,
         );
       } else {
         final message = _extractErrorMessage(response.data);
         throw ApiException(
-          message: message ?? 'Failed to load profile',
+          message: message ?? 'Could not load profile. Please try again.',
           statusCode: response.statusCode,
         );
       }
@@ -212,21 +228,18 @@ class ApiService {
         await _secureStorage.clearAuthToken();
         onUnauthorized?.call();
         throw const ApiException(
-          message: 'Session expired. Please login again.',
+          message: 'Your session has expired. Please login again.',
           statusCode: 401,
         );
       }
       throw ApiException(
-        message: e.message ?? 'Network error during profile fetch',
+        message: 'Could not load profile. Please try again.',
         statusCode: e.response?.statusCode,
       );
     }
   }
 
   /// Get enrolled courses
-  ///
-  /// Returns list of Course models
-  /// Shows all courses the student is enrolled in
   Future<List<Course>> getCourses() async {
     try {
       final response = await _dio.get(ApiConfig.courses);
@@ -246,13 +259,13 @@ class ApiService {
         await _secureStorage.clearAuthToken();
         onUnauthorized?.call();
         throw const ApiException(
-          message: 'Session expired. Please login again.',
+          message: 'Your session has expired. Please login again.',
           statusCode: 401,
         );
       } else {
         final message = _extractErrorMessage(response.data);
         throw ApiException(
-          message: message ?? 'Failed to load courses',
+          message: message ?? 'Could not load courses. Please try again.',
           statusCode: response.statusCode,
         );
       }
@@ -261,21 +274,18 @@ class ApiService {
         await _secureStorage.clearAuthToken();
         onUnauthorized?.call();
         throw const ApiException(
-          message: 'Session expired. Please login again.',
+          message: 'Your session has expired. Please login again.',
           statusCode: 401,
         );
       }
       throw ApiException(
-        message: e.message ?? 'Network error during course fetch',
+        message: 'Could not load courses. Please try again.',
         statusCode: e.response?.statusCode,
       );
     }
   }
 
   /// Get lectures for a specific course
-  ///
-  /// [courseId] - The course ID
-  /// Returns list of Lecture models
   Future<List<Lecture>> getCourseLectures(String courseId) async {
     try {
       final url = ApiConfig.buildCourseLecturesUrl(courseId);
@@ -296,13 +306,13 @@ class ApiService {
         await _secureStorage.clearAuthToken();
         onUnauthorized?.call();
         throw const ApiException(
-          message: 'Session expired. Please login again.',
+          message: 'Your session has expired. Please login again.',
           statusCode: 401,
         );
       } else {
         final message = _extractErrorMessage(response.data);
         throw ApiException(
-          message: message ?? 'Failed to load lectures',
+          message: message ?? 'Could not load lectures. Please try again.',
           statusCode: response.statusCode,
         );
       }
@@ -311,21 +321,18 @@ class ApiService {
         await _secureStorage.clearAuthToken();
         onUnauthorized?.call();
         throw const ApiException(
-          message: 'Session expired. Please login again.',
+          message: 'Your session has expired. Please login again.',
           statusCode: 401,
         );
       }
       throw ApiException(
-        message: e.message ?? 'Network error during lecture fetch',
+        message: 'Could not load lectures. Please try again.',
         statusCode: e.response?.statusCode,
       );
     }
   }
 
   /// Get lecture details (video + notes)
-  ///
-  /// [lectureId] - The lecture ID
-  /// Returns Lecture model with video and notes data
   Future<Lecture> getLectureDetails(String lectureId) async {
     try {
       final url = ApiConfig.buildLectureDetailsUrl(lectureId);
@@ -344,13 +351,13 @@ class ApiService {
         await _secureStorage.clearAuthToken();
         onUnauthorized?.call();
         throw const ApiException(
-          message: 'Session expired. Please login again.',
+          message: 'Your session has expired. Please login again.',
           statusCode: 401,
         );
       } else {
         final message = _extractErrorMessage(response.data);
         throw ApiException(
-          message: message ?? 'Failed to load lecture details',
+          message: message ?? 'Could not load video. Please try again.',
           statusCode: response.statusCode,
         );
       }
@@ -359,12 +366,12 @@ class ApiService {
         await _secureStorage.clearAuthToken();
         onUnauthorized?.call();
         throw const ApiException(
-          message: 'Session expired. Please login again.',
+          message: 'Your session has expired. Please login again.',
           statusCode: 401,
         );
       }
       throw ApiException(
-        message: e.message ?? 'Network error during lecture details fetch',
+        message: 'Could not load video. Please try again.',
         statusCode: e.response?.statusCode,
       );
     }
@@ -388,16 +395,17 @@ class ApiService {
         await _secureStorage.clearAuthToken();
         onUnauthorized?.call();
         throw const ApiException(
-            message: 'Session expired. Please login again.', statusCode: 401);
+            message: 'Your session has expired. Please login again.',
+            statusCode: 401);
       } else {
         final message = _extractErrorMessage(response.data);
         throw ApiException(
-            message: message ?? 'Failed to load certificates',
+            message: message ?? 'Could not load certificates. Please try again.',
             statusCode: response.statusCode);
       }
     } on DioException catch (e) {
       throw ApiException(
-          message: e.message ?? 'Network error',
+          message: 'Could not load certificates. Please try again.',
           statusCode: e.response?.statusCode);
     }
   }
@@ -416,22 +424,22 @@ class ApiService {
         await _secureStorage.clearAuthToken();
         onUnauthorized?.call();
         throw const ApiException(
-            message: 'Session expired. Please login again.', statusCode: 401);
+            message: 'Your session has expired. Please login again.',
+            statusCode: 401);
       } else {
         final message = _extractErrorMessage(response.data);
         throw ApiException(
-            message: message ?? 'Failed to load certificate',
+            message: message ?? 'Could not load certificate. Please try again.',
             statusCode: response.statusCode);
       }
     } on DioException catch (e) {
       throw ApiException(
-          message: e.message ?? 'Network error',
+          message: 'Could not load certificate. Please try again.',
           statusCode: e.response?.statusCode);
     }
   }
+
   /// GET /api/v1/student/exam/history
-  /// ✅ Endpoint confirmed working in Postman (200 OK)
-  /// ✅ Response key confirmed: "attempts"
   Future<List<ExamHistory>> getExamHistory() async {
     try {
       final response = await _dio.get('/student/exam/history');
@@ -445,44 +453,34 @@ class ApiService {
           .toList();
     } on DioException catch (e) {
       debugPrint('❌ getExamHistory: ${e.response?.statusCode} ${e.message}');
-      throw Exception('Failed to load exam history');
+      throw Exception('Could not load exam history. Please try again.');
     } catch (e) {
       debugPrint('❌ getExamHistory unexpected: $e');
-      throw Exception('Unexpected error loading exam history');
+      throw Exception('Something went wrong. Please try again.');
     }
   }
 
   // ==================== UTILITY METHODS ====================
 
   /// Extract error message from API response
-  ///
-  /// [data] - Response data (may be Map or other types)
-  /// Returns error message or null
   String? _extractErrorMessage(dynamic data) {
     if (data is Map<String, dynamic>) {
-      // Try common error message fields
       return data['message'] ?? data['error'] ?? data['errorMessage'];
     }
     return null;
   }
 
-  /// Check if user is authenticated (has valid token)
-  ///
-  /// Returns true if token exists in secure storage
+  /// Check if user is authenticated
   Future<bool> isAuthenticated() async {
     final token = await _secureStorage.getAuthToken();
     return token != null && token.isNotEmpty;
   }
 
   /// Get Dio instance for custom requests
-  ///
-  /// Useful for file downloads or special requests
   Dio get dio => _dio;
 }
 
 /// Custom API Exception
-///
-/// Provides detailed error information for API failures
 class ApiException implements Exception {
   final String message;
   final int? statusCode;

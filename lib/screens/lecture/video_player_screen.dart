@@ -47,6 +47,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     try {
       final lecture = await context.read<LectureProvider>().getLectureDetails(widget.lectureId);
       if (!mounted) return;
+      debugPrint('=== LECTURE DEBUG ===');
+      debugPrint('ID: ${lecture.id}');
+      debugPrint('Topic: ${lecture.topic}');
+      debugPrint('hasVideo: ${lecture.hasVideo}');
+      debugPrint('isFailed: ${lecture.isFailed}');
+      debugPrint('youtubeVideoId: ${lecture.youtubeVideoId}');
+      debugPrint('====================');
       setState(() {
         _lecture = lecture;
         _isLoading = false;
@@ -69,7 +76,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     }
   }
 
-  // ✅ Updated _downloadNotes — app मध्येच open होईल
   Future<void> _downloadNotes() async {
     if (_lecture?.notesUrl == null || _lecture!.notesUrl!.isEmpty) {
       showInfoSnackBar(context, 'Notes not available for this lecture');
@@ -78,7 +84,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
     final fileName = 'notes_lecture_${_lecture!.lectureNumber}.pdf';
 
-    // ✅ Already downloaded असेल तर directly open करा
     final existingPath = await DownloadManager().getExistingFilePath(fileName);
     if (existingPath != null && mounted) {
       Navigator.push(
@@ -93,7 +98,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       return;
     }
 
-    // ✅ Download करा
     setState(() {
       _isDownloadingNotes = true;
       _downloadProgress = 0.0;
@@ -110,7 +114,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
       if (!mounted) return;
 
-      // ✅ App मध्येच PDF उघडा
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -132,10 +135,39 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     }
   }
 
-  void _goToLecture(Lecture lecture) {
+  // ✅ Step 1 (already done) — Next: right to left slide
+  void _goToNextLecture(Lecture lecture) {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => VideoPlayerScreen(lectureId: lecture.id)),
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => VideoPlayerScreen(lectureId: lecture.id),
+        transitionsBuilder: (_, animation, __, child) {
+          final tween = Tween<Offset>(
+            begin: const Offset(1.0, 0.0), // येतो right बाजूने
+            end: Offset.zero,
+          ).chain(CurveTween(curve: Curves.easeInOut));
+          return SlideTransition(position: animation.drive(tween), child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
+  }
+
+  // ✅ Step 2 — Previous: left to right slide (opposite direction)
+  void _goToPrevLecture(Lecture lecture) {
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => VideoPlayerScreen(lectureId: lecture.id),
+        transitionsBuilder: (_, animation, __, child) {
+          final tween = Tween<Offset>(
+            begin: const Offset(-1.0, 0.0), // येतो left बाजूने
+            end: Offset.zero,
+          ).chain(CurveTween(curve: Curves.easeInOut));
+          return SlideTransition(position: animation.drive(tween), child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
     );
   }
 
@@ -150,27 +182,39 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final overlayStyle = SystemUiOverlayStyle(
+      statusBarColor: AppColors.primary,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: AppColors.cardOf(context),
+      systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+    );
+
+    if (_controller == null) {
+      return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: overlayStyle,
+        child: Scaffold(
+          backgroundColor: AppColors.bgOf(context),
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: AppColors.cyan))
+              : _lecture == null
+              ? EmptyState.noLectures()
+              : _buildContent(context, const SizedBox.shrink()),
+        ),
+      );
+    }
+
     return YoutubePlayerBuilder(
       player: YoutubePlayer(
-        controller: _controller ?? YoutubePlayerController(initialVideoId: 'dQw4w9WgXcQ'),
+        controller: _controller!,
         showVideoProgressIndicator: true,
         progressIndicatorColor: AppColors.cyan,
       ),
       builder: (ctx, player) {
         return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle(
-            statusBarColor: AppColors.primary,
-            statusBarIconBrightness: Brightness.light,
-            systemNavigationBarColor: AppColors.cardOf(context),
-            systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-          ),
+          value: overlayStyle,
           child: Scaffold(
             backgroundColor: AppColors.bgOf(context),
-            body: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.cyan))
-                : _lecture == null
-                ? EmptyState.noLectures()
-                : _buildContent(ctx, player),
+            body: _buildContent(ctx, player),
           ),
         );
       },
@@ -393,7 +437,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('View Lecture Notes', // ✅ "Download" → "View" केलं
+                    Text('View Lecture Notes',
                         style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -410,7 +454,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         strokeWidth: 2,
                         value: _downloadProgress > 0 ? _downloadProgress : null,
                         color: AppColors.red))
-                    : Icon(Icons.arrow_forward_ios_rounded, // ✅ Icon बदलला
+                    : Icon(Icons.arrow_forward_ios_rounded,
                     size: 16, color: AppColors.text2Of(context)),
               ],
             ),
@@ -418,6 +462,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         ));
   }
 
+  // ✅ Step 4 — All Lectures card: direction-aware navigation
   Widget _buildAllLecturesCard(BuildContext context, List<Lecture> lectures, int currentIndex) {
     return _buildCard(
         context,
@@ -430,7 +475,16 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             final isReady = lecture.isReady;
 
             return GestureDetector(
-              onTap: isCurrent ? null : () => _goToLecture(lecture),
+              onTap: isCurrent
+                  ? null
+                  : () {
+                // ✅ Index compare करून direction ठरवतो
+                if (index > currentIndex) {
+                  _goToNextLecture(lecture);
+                } else {
+                  _goToPrevLecture(lecture);
+                }
+              },
               child: Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -489,6 +543,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         ));
   }
 
+  // ✅ Step 3 — Bottom nav: prev/next वेगळ्या methods वापरतो
   Widget _buildBottomNav(BuildContext context, List<Lecture> lectures, int currentIndex,
       bool hasPrev, bool hasNext) {
     return SafeArea(
@@ -508,7 +563,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           children: [
             Expanded(
               child: GestureDetector(
-                onTap: hasPrev ? () => _goToLecture(lectures[currentIndex - 1]) : null,
+                // ✅ Previous → _goToPrevLecture (left से right slide)
+                onTap: hasPrev ? () => _goToPrevLecture(lectures[currentIndex - 1]) : null,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
@@ -539,7 +595,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: GestureDetector(
-                onTap: hasNext ? () => _goToLecture(lectures[currentIndex + 1]) : null,
+                // ✅ Next → _goToNextLecture (right से left slide)
+                onTap: hasNext ? () => _goToNextLecture(lectures[currentIndex + 1]) : null,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(

@@ -57,6 +57,7 @@ class ApiConfig {
   /// Get lecture details - GET (append lectureId)
   /// Format: /student/lectures/{lectureId}
   static const String lectureDetails = '/student/lectures';
+  static const String forgotPassword = '/auth/forgot-password';
 
   // ==================== HELPER METHODS ====================
 

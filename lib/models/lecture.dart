@@ -128,7 +128,7 @@ class Lecture {
   bool get hasNotes => notesUrl != null && notesUrl!.isNotEmpty;
 
   /// Check if video ID is available
-  bool get hasVideo => youtubeVideoId != null && youtubeVideoId!.isNotEmpty;
+  bool get hasVideo => youtubeVideoId != null && youtubeVideoId!.isNotEmpty && isReady;
 
   /// Get formatted upload date (e.g., "Mar 25, 2026")
   String get formattedUploadDate {

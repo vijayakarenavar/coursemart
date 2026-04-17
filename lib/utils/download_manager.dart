@@ -26,12 +26,23 @@ class DownloadManager {
     return await getApplicationDocumentsDirectory();
   }
 
-  /// ✅ Check if file already downloaded
   Future<String?> getExistingFilePath(String fileName) async {
     final directory = await _getDownloadDirectory();
     final filePath = '${directory.path}/$fileName';
     final file = File(filePath);
-    if (await file.exists()) return filePath;
+
+    if (!await file.exists()) return null;
+
+    try {
+      final bytes = await file.openRead(0, 4).first;
+      if (bytes.length >= 4 &&
+          bytes[0] == 0x25 && bytes[1] == 0x50 &&
+          bytes[2] == 0x44 && bytes[3] == 0x46) {
+        return filePath;
+      }
+    } catch (_) {}
+
+    await file.delete();
     return null;
   }
 
@@ -54,44 +65,60 @@ class DownloadManager {
           ? url
           : ApiConfig.buildMediaUrl(url);
 
-      debugPrint('⬇️ Downloading: $fullUrl');
-      debugPrint('📁 Saving to: $filePath');
+      final downloadDio = Dio();
 
-      await _dio.download(
+      await downloadDio.download(
         fullUrl,
         filePath,
         cancelToken: cancelToken,
         onReceiveProgress: (received, total) {
           if (total != -1) {
-            debugPrint('📊 Progress: ${(received / total * 100).toStringAsFixed(0)}%');
             onProgress?.call(received, total);
           }
         },
         options: Options(
+          followRedirects: true,
+          maxRedirects: 5,
           receiveTimeout: AppConstants.requestTimeout,
           sendTimeout: AppConstants.requestTimeout,
+          headers: {
+            'Accept': 'application/pdf,*/*',
+          },
         ),
       );
 
+      final file = File(filePath);
+      final fileSize = await file.length();
+
+      if (fileSize < 100) {
+        await file.delete();
+        throw Exception('Downloaded file is too small — likely an error page');
+      }
+
+      final bytes = await file.openRead(0, 4).first;
+
+      if (bytes.length < 4 || bytes[0] != 0x25 || bytes[1] != 0x50 ||
+          bytes[2] != 0x44 || bytes[3] != 0x46) {
+        await file.delete();
+        throw Exception('Downloaded file is not a valid PDF.');
+      }
+
       _activeDownloads.remove(downloadId);
-      debugPrint('✅ Download complete: $filePath');
       onComplete?.call(filePath);
 
       return filePath;
+
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
-        debugPrint('⏹️ Download cancelled');
         onError?.call('Download cancelled');
         throw Exception('Download cancelled');
       }
-      debugPrint('❌ Download error: ${e.message}');
       final errorMsg = e.message ?? 'Download failed';
       onError?.call(errorMsg);
       throw Exception(errorMsg);
     } catch (e) {
-      debugPrint('❌ Download error: $e');
       onError?.call(e.toString());
-      throw Exception('Download failed: $e');
+      rethrow;
     }
   }
 
@@ -99,7 +126,6 @@ class DownloadManager {
     if (_activeDownloads.containsKey(downloadId)) {
       _activeDownloads[downloadId]!.cancel();
       _activeDownloads.remove(downloadId);
-      debugPrint('⏹️ Download cancelled: $downloadId');
     }
   }
 
@@ -108,7 +134,6 @@ class DownloadManager {
       entry.value.cancel();
     }
     _activeDownloads.clear();
-    debugPrint('⏹️ All downloads cancelled');
   }
 
   int get activeDownloadCount => _activeDownloads.length;
@@ -119,10 +144,8 @@ class DownloadManager {
       final file = File(filePath);
       if (await file.exists()) {
         await file.delete();
-        debugPrint('🗑️ File deleted: $filePath');
       }
     } catch (e) {
-      debugPrint('❌ Error deleting file: $e');
       rethrow;
     }
   }
@@ -136,7 +159,6 @@ class DownloadManager {
           .where((file) => file.path.endsWith('.pdf'))
           .toList();
     } catch (e) {
-      debugPrint('❌ Error getting files: $e');
       return [];
     }
   }
@@ -147,9 +169,7 @@ class DownloadManager {
       for (final file in files) {
         await file.delete();
       }
-      debugPrint('🗑️ All downloads cleared');
     } catch (e) {
-      debugPrint('❌ Error clearing downloads: $e');
       rethrow;
     }
   }
