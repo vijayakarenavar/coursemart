@@ -31,7 +31,6 @@ class AuthProvider extends ChangeNotifier {
   String get studentName => _student?.name ?? 'Student';
   String get studentEmail => _student?.email ?? '';
 
-  // ✅ Helper — disposed असेल तर notifyListeners call करणार नाही
   void _safeNotify() {
     if (hasListeners) notifyListeners();
   }
@@ -51,14 +50,14 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Auth init error: $e');
       _status = AuthStatus.unauthenticated;
-      _errorMessage = e.toString();
+      _setError(e); // ✅ Fixed: e instead of e.toString()
       _safeNotify();
     }
   }
 
   Future<bool> login({required String email, required String password}) async {
     _clearError();
-    _safeNotify(); // ✅ safe
+    _safeNotify();
 
     try {
       await _apiService.login(email: email, password: password);
@@ -67,9 +66,9 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('❌ Login error: $e');
-      _setError(e.toString());
+      _setError(e); // ✅ Fixed: e instead of e.toString()
       _status = AuthStatus.unauthenticated;
-      _safeNotify(); // ✅ safe
+      _safeNotify();
       return false;
     }
   }
@@ -81,7 +80,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('⚠️ Logout error: $e');
     } finally {
       _reset();
-      _safeNotify(); // ✅ safe
+      _safeNotify();
     }
   }
 
@@ -90,8 +89,8 @@ class AuthProvider extends ChangeNotifier {
       await _fetchProfile();
     } catch (e) {
       debugPrint('❌ Profile refresh error: $e');
-      _setError(e.toString());
-      _safeNotify(); // ✅ safe
+      _setError(e); // ✅ Fixed: e instead of e.toString()
+      _safeNotify();
     }
   }
 
@@ -100,7 +99,7 @@ class AuthProvider extends ChangeNotifier {
     required String newPassword,
   }) async {
     _clearError();
-    _safeNotify(); // ✅ safe
+    _safeNotify();
 
     try {
       final message = await _apiService.changePassword(
@@ -110,15 +109,11 @@ class AuthProvider extends ChangeNotifier {
       return message;
     } catch (e) {
       debugPrint('❌ Change password error: $e');
-      _setError(e.toString());
+      _setError(e); // ✅ Fixed: e instead of e.toString()
       rethrow;
     }
   }
 
-  // जुने तीन methods (sendForgotPasswordOtp, verifyForgotPasswordOtp, resetPassword)
-// हे तिन्ही DELETE करा आणि हे दोन add करा:
-
-  /// Step 1 — Email पाठवा, resetToken परत येतो
   Future<String> forgotPassword({required String email}) async {
     try {
       final token = await _apiService.forgotPassword(email: email);
@@ -130,7 +125,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Step 2 — Token + नवीन password पाठवा
   Future<void> resetPasswordWithToken({
     required String token,
     required String newPassword,
@@ -150,25 +144,25 @@ class AuthProvider extends ChangeNotifier {
   void handleUnauthorized() {
     debugPrint('🚨 Unauthorized - triggering logout');
     _reset();
-    _safeNotify(); // ✅ safe
+    _safeNotify();
   }
 
   Future<void> _fetchProfile() async {
     try {
       _student = await _apiService.getProfile();
       _status = AuthStatus.authenticated;
-      _safeNotify(); // ✅ safe
+      _safeNotify();
     } catch (e) {
       debugPrint('❌ Profile fetch error: $e');
-      if (e.toString().contains('401') ||
-          e.toString().contains('Session expired')) {
+      // ✅ Fixed: e is ApiException check instead of e.toString().contains()
+      if (e is ApiException && e.statusCode == 401) {
         await _secureStorage.clearAuthToken();
         _status = AuthStatus.unauthenticated;
       } else {
         _status = AuthStatus.error;
-        _errorMessage = e.toString();
+        _setError(e); // ✅ Fixed: e instead of e.toString()
       }
-      _safeNotify(); // ✅ safe
+      _safeNotify();
     }
   }
 
@@ -182,8 +176,12 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
   }
 
-  void _setError(String message) {
-    _errorMessage = message;
+  // ✅ Fixed: dynamic type, ApiException check
+  void _setError(dynamic error) {
+    if (error is ApiException) {
+      _errorMessage = error.message;
+    } else {
+      _errorMessage = 'Something went wrong. Please try again.';
+    }
   }
-
 }

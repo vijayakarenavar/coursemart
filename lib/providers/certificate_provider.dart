@@ -1,7 +1,8 @@
-// lib/providers/certificate_provider.dart
-// ✅ All getters match dashboard_screen.dart usage
+/// Certificate Provider
+library;
 
 import 'package:flutter/foundation.dart';
+
 import '../models/certificate.dart';
 import '../models/exam_history.dart';
 import '../services/api_service.dart';
@@ -11,34 +12,21 @@ class CertificateProvider extends ChangeNotifier {
 
   List<Certificate> _certificates = [];
   List<ExamHistory> _examHistory = [];
-
   bool _isLoading = false;
   String? _errorMessage;
 
-  // ── Getters used in dashboard_screen.dart ─────────────────────────────────
-
   List<Certificate> get certificates => _certificates;
   List<ExamHistory> get examHistory => _examHistory;
-
   bool get isLoading => _isLoading;
   bool get hasError => _errorMessage != null;
   String? get errorMessage => _errorMessage;
 
-  /// Tab label: "Certificates (N)"
   int get certificatesEarned => _certificates.length;
-
-  /// Tab label: "Exam History (N)" — all attempts including in_progress
   int get totalAttempts => _examHistory.length;
-
-  /// Summary card: Passed (completed + passed==true)
   int get examsPassed =>
       _examHistory.where((e) => e.isCompleted && e.isPassed).length;
-
-  /// Summary card: Failed (completed + passed==false)
   int get examsFailed =>
       _examHistory.where((e) => e.isCompleted && !e.isPassed).length;
-
-  // ── Fetch both on tab open ─────────────────────────────────────────────────
 
   Future<void> fetchCertificates() async {
     _isLoading = true;
@@ -46,7 +34,6 @@ class CertificateProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Run both in parallel
       final results = await Future.wait([
         _apiService.getCertificates(),
         _apiService.getExamHistory(),
@@ -56,7 +43,12 @@ class CertificateProvider extends ChangeNotifier {
       debugPrint('✅ Certs: ${_certificates.length}, History: ${_examHistory.length}');
     } catch (e) {
       debugPrint('❌ CertificateProvider error: $e');
-      _errorMessage = e.toString();
+      // ✅ Fixed: ApiException check instead of e.toString()
+      if (e is ApiException) {
+        _errorMessage = e.message;
+      } else {
+        _errorMessage = 'Something went wrong. Please try again.';
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
