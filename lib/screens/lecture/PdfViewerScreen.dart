@@ -22,6 +22,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   int _totalPages = 0;
   int _currentPage = 0;
   bool _isReady = false;
+  bool _hasError = false; // ✅ Error state track करायला
   PDFViewController? _pdfController;
 
   @override
@@ -64,7 +65,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (_isReady)
+                    if (_isReady && !_hasError)
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
@@ -90,33 +91,87 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
           Expanded(
             child: Stack(
               children: [
-                PDFView(
-                  filePath: widget.filePath,
-                  enableSwipe: true,
-                  swipeHorizontal: false,
-                  autoSpacing: true,
-                  pageFling: true,
-                  onRender: (pages) {
-                    setState(() {
-                      _totalPages = pages ?? 0;
-                      _isReady = true;
-                    });
-                  },
-                  onViewCreated: (controller) {
-                    _pdfController = controller;
-                  },
-                  onPageChanged: (page, total) {
-                    setState(() => _currentPage = page ?? 0);
-                  },
-                  onError: (error) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $error')),
-                    );
-                  },
-                ),
+                // ✅ Error state — PDF load fail झाल्यास
+                if (_hasError)
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.picture_as_pdf_rounded,
+                            size: 56, color: AppColors.red),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Could not load PDF',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textOf(context),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Check your internet and try again',
+                          style: TextStyle(
+                              fontSize: 13, color: AppColors.text2Of(context)),
+                        ),
+                        const SizedBox(height: 28),
+                        GestureDetector(
+                          onTap: () => setState(() => _hasError = false),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 32, vertical: 14),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                  colors: [AppColors.cyan, AppColors.cyanDark]),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.refresh_rounded,
+                                      color: Colors.white, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Try Again',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700)),
+                                ]),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  PDFView(
+                    filePath: widget.filePath,
+                    enableSwipe: true,
+                    swipeHorizontal: false,
+                    autoSpacing: true,
+                    pageFling: true,
+                    onRender: (pages) {
+                      setState(() {
+                        _totalPages = pages ?? 0;
+                        _isReady = true;
+                      });
+                    },
+                    onViewCreated: (controller) {
+                      _pdfController = controller;
+                    },
+                    onPageChanged: (page, total) {
+                      setState(() => _currentPage = page ?? 0);
+                    },
+                    onError: (error) {
+                      // ✅ Error state set करा
+                      setState(() {
+                        _hasError = true;
+                        _isReady = false;
+                      });
+                    },
+                  ),
 
                 // Loading indicator
-                if (!_isReady)
+                if (!_isReady && !_hasError)
                   const Center(
                     child: CircularProgressIndicator(color: AppColors.cyan),
                   ),

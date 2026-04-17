@@ -28,6 +28,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   YoutubePlayerController? _controller;
   Lecture? _lecture;
   bool _isLoading = true;
+  bool _hasError = false; // ✅ Error state track करायला
   bool _isDownloadingNotes = false;
   double _downloadProgress = 0.0;
 
@@ -43,7 +44,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   Future<void> _loadLectureDetails() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _hasError = false; // ✅ retry करताना error clear करा
+    });
     try {
       final lecture = await context.read<LectureProvider>().getLectureDetails(widget.lectureId);
       if (!mounted) return;
@@ -71,8 +75,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
-      showErrorSnackBar(context, getErrorMessage(e));
+      // ✅ Error state set करा — snackbar नको, error UI दाखवा
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
     }
   }
 
@@ -135,7 +142,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     }
   }
 
-  // ✅ Step 1 (already done) — Next: right to left slide
   void _goToNextLecture(Lecture lecture) {
     Navigator.pushReplacement(
       context,
@@ -143,7 +149,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         pageBuilder: (_, __, ___) => VideoPlayerScreen(lectureId: lecture.id),
         transitionsBuilder: (_, animation, __, child) {
           final tween = Tween<Offset>(
-            begin: const Offset(1.0, 0.0), // येतो right बाजूने
+            begin: const Offset(1.0, 0.0),
             end: Offset.zero,
           ).chain(CurveTween(curve: Curves.easeInOut));
           return SlideTransition(position: animation.drive(tween), child: child);
@@ -153,7 +159,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     );
   }
 
-  // ✅ Step 2 — Previous: left to right slide (opposite direction)
   void _goToPrevLecture(Lecture lecture) {
     Navigator.pushReplacement(
       context,
@@ -161,7 +166,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         pageBuilder: (_, __, ___) => VideoPlayerScreen(lectureId: lecture.id),
         transitionsBuilder: (_, animation, __, child) {
           final tween = Tween<Offset>(
-            begin: const Offset(-1.0, 0.0), // येतो left बाजूने
+            begin: const Offset(-1.0, 0.0),
             end: Offset.zero,
           ).chain(CurveTween(curve: Curves.easeInOut));
           return SlideTransition(position: animation.drive(tween), child: child);
@@ -196,6 +201,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           backgroundColor: AppColors.bgOf(context),
           body: _isLoading
               ? const Center(child: CircularProgressIndicator(color: AppColors.cyan))
+              : _hasError
+              ? _buildErrorState(context) // ✅ Error state
               : _lecture == null
               ? EmptyState.noLectures()
               : _buildContent(context, const SizedBox.shrink()),
@@ -218,6 +225,60 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           ),
         );
       },
+    );
+  }
+
+  // ✅ Error state widget — net off/on scenario साठी
+  Widget _buildErrorState(BuildContext context) {
+    return Column(
+      children: [
+        _buildTopBar(context),
+        Expanded(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.wifi_off_rounded, size: 56, color: AppColors.text2),
+                const SizedBox(height: 16),
+                Text(
+                  'Could not load lecture',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textOf(context),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Check your internet and try again',
+                  style: TextStyle(fontSize: 13, color: AppColors.text2Of(context)),
+                ),
+                const SizedBox(height: 28),
+                GestureDetector(
+                  onTap: _loadLectureDetails,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                          colors: [AppColors.cyan, AppColors.cyanDark]),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.refresh_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text('Try Again',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -462,7 +523,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         ));
   }
 
-  // ✅ Step 4 — All Lectures card: direction-aware navigation
   Widget _buildAllLecturesCard(BuildContext context, List<Lecture> lectures, int currentIndex) {
     return _buildCard(
         context,
@@ -478,7 +538,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               onTap: isCurrent
                   ? null
                   : () {
-                // ✅ Index compare करून direction ठरवतो
                 if (index > currentIndex) {
                   _goToNextLecture(lecture);
                 } else {
@@ -543,7 +602,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         ));
   }
 
-  // ✅ Step 3 — Bottom nav: prev/next वेगळ्या methods वापरतो
   Widget _buildBottomNav(BuildContext context, List<Lecture> lectures, int currentIndex,
       bool hasPrev, bool hasNext) {
     return SafeArea(
@@ -563,7 +621,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           children: [
             Expanded(
               child: GestureDetector(
-                // ✅ Previous → _goToPrevLecture (left से right slide)
                 onTap: hasPrev ? () => _goToPrevLecture(lectures[currentIndex - 1]) : null,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -595,7 +652,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: GestureDetector(
-                // ✅ Next → _goToNextLecture (right से left slide)
                 onTap: hasNext ? () => _goToNextLecture(lectures[currentIndex + 1]) : null,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14),

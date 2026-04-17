@@ -756,60 +756,65 @@ class _CoursesTab extends StatelessWidget {
       backgroundColor: AppColors.bgOf(context),
       body: Consumer<CourseProvider>(
         builder: (context, cp, _) {
-          return ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              _FloatingHeader(
-                title: '📚 My Courses',
-                subtitle: 'View all your enrolled courses',
-              ),
-              if (cp.isLoading && cp.courseCount == 0)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: const CircularProgressIndicator(
-                        color: AppColors.cyan),
-                  ),
-                )
-              else if (isTablet)
-              // Tablet: 2 column grid
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: hp),
-                  child: GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 14,
-                    crossAxisSpacing: 14,
-                    childAspectRatio: 1.8,
-                    children: cp.courses.map((c) => CourseCard(
-                      course: c,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => CourseDetailsScreen(courseId: c.id),
+          // ✅ RefreshIndicator added
+          return RefreshIndicator(
+            onRefresh: () => cp.refresh(),
+            color: AppColors.cyan,
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _FloatingHeader(
+                  title: '📚 My Courses',
+                  subtitle: 'View all your enrolled courses',
+                ),
+                if (cp.isLoading && cp.courseCount == 0)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: const CircularProgressIndicator(
+                          color: AppColors.cyan),
+                    ),
+                  )
+                else if (isTablet)
+                // Tablet: 2 column grid
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: hp),
+                    child: GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 14,
+                      crossAxisSpacing: 14,
+                      childAspectRatio: 1.8,
+                      children: cp.courses.map((c) => CourseCard(
+                        course: c,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CourseDetailsScreen(courseId: c.id),
+                          ),
                         ),
-                      ),
-                    )).toList(),
-                  ),
-                )
-              else
-                ...cp.courses.map(
-                      (c) => Padding(
-                    padding: EdgeInsets.fromLTRB(hp, 0, hp, 16),
-                    child: CourseCard(
-                      course: c,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => CourseDetailsScreen(courseId: c.id),
+                      )).toList(),
+                    ),
+                  )
+                else
+                  ...cp.courses.map(
+                        (c) => Padding(
+                      padding: EdgeInsets.fromLTRB(hp, 0, hp, 16),
+                      child: CourseCard(
+                        course: c,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CourseDetailsScreen(courseId: c.id),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 8),
+              ],
+            ),
           );
         },
       ),
@@ -830,56 +835,61 @@ class _ProgressTab extends StatelessWidget {
       body: Consumer<CourseProvider>(
         builder: (context, cp, _) {
           final pct = (cp.overallProgress * 100).toInt();
-          return ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              _FloatingHeader(
-                title: '📈 My Progress',
-                subtitle: 'Track your learning journey',
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: hp),
-                child: Row(
-                  children: [
-                    _ProgressStat(
-                      icon: Icons.menu_book_rounded,
-                      iconColor: AppColors.primary,
-                      number: '${cp.courseCount}',
-                      label: 'Total Courses',
-                    ),
-                    const SizedBox(width: 12),
-                    _ProgressStat(
-                      icon: Icons.check_circle_rounded,
-                      iconColor: AppColors.green,
-                      number: '${cp.completedLecturesCount}',
-                      label: 'Completed',
-                    ),
-                    const SizedBox(width: 12),
-                    _ProgressStat(
-                      icon: Icons.bar_chart_rounded,
-                      iconColor: AppColors.cyan,
-                      number: '$pct%',
-                      label: 'Overall',
-                    ),
-                  ],
+          // ✅ RefreshIndicator added
+          return RefreshIndicator(
+            onRefresh: () => cp.refresh(),
+            color: AppColors.cyan,
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _FloatingHeader(
+                  title: '📈 My Progress',
+                  subtitle: 'Track your learning journey',
                 ),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: hp),
-                child: Text(
-                  'Course-wise Progress',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.textOf(context),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: hp),
+                  child: Row(
+                    children: [
+                      _ProgressStat(
+                        icon: Icons.menu_book_rounded,
+                        iconColor: AppColors.primary,
+                        number: '${cp.courseCount}',
+                        label: 'Total Courses',
+                      ),
+                      const SizedBox(width: 12),
+                      _ProgressStat(
+                        icon: Icons.check_circle_rounded,
+                        iconColor: AppColors.green,
+                        number: '${cp.completedLecturesCount}',
+                        label: 'Completed',
+                      ),
+                      const SizedBox(width: 12),
+                      _ProgressStat(
+                        icon: Icons.bar_chart_rounded,
+                        iconColor: AppColors.cyan,
+                        number: '$pct%',
+                        label: 'Overall',
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              ...cp.courses.map((c) => _CourseProgressItem(course: c)),
-              const SizedBox(height: 20),
-            ],
+                const SizedBox(height: 20),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: hp),
+                  child: Text(
+                    'Course-wise Progress',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textOf(context),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...cp.courses.map((c) => _CourseProgressItem(course: c)),
+                const SizedBox(height: 20),
+              ],
+            ),
           );
         },
       ),
@@ -1028,12 +1038,6 @@ class _CourseProgressItem extends StatelessWidget {
     );
   }
 }
-
-// ── CERTIFICATES TAB ──────────────────────────────────────────────────────────
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// REPLACE the existing _CertificatesTab in dashboard_screen.dart with this.
-// Also add the helper widgets at the bottom of that file.
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // ── CERTIFICATES TAB ──────────────────────────────────────────────────────────
 class _CertificatesTab extends StatefulWidget {
@@ -1510,7 +1514,6 @@ class _ExamHistoryTable extends StatelessWidget {
 
     return DataRow(
       cells: [
-        // Course
         DataCell(
           SizedBox(
             width: 90,
@@ -1521,7 +1524,6 @@ class _ExamHistoryTable extends StatelessWidget {
             ),
           ),
         ),
-        // Attempt badge
         DataCell(
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1539,9 +1541,7 @@ class _ExamHistoryTable extends StatelessWidget {
             ),
           ),
         ),
-        // Score
         DataCell(Text('${e.score}/${e.totalMarks}')),
-        // Percentage
         DataCell(
           Text(
             '${e.percentage.toStringAsFixed(1)}%',
@@ -1551,7 +1551,6 @@ class _ExamHistoryTable extends StatelessWidget {
             ),
           ),
         ),
-        // Grade badge
         DataCell(
           Container(
             width: 28,
@@ -1570,15 +1569,12 @@ class _ExamHistoryTable extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  color: e.isPassed
-                      ? Colors.white
-                      : AppColors.pink,
+                  color: e.isPassed ? Colors.white : AppColors.pink,
                 ),
               ),
             ),
           ),
         ),
-        // Status
         DataCell(
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1609,13 +1605,11 @@ class _ExamHistoryTable extends StatelessWidget {
             ),
           ),
         ),
-        // Date
         DataCell(Text(
           e.formattedDate,
           style: TextStyle(
               fontSize: 11, color: AppColors.text2Of(context)),
         )),
-        // Certificate status
         DataCell(
           e.hasCertificate
               ? Container(
@@ -1638,32 +1632,19 @@ class _ExamHistoryTable extends StatelessWidget {
               style:
               TextStyle(color: AppColors.text2Of(context))),
         ),
-        // Actions
         DataCell(
           Row(
             children: [
-              // View result
               _ActionButton(
                 icon: Icons.bar_chart_rounded,
-                onTap: () {
-                  // Navigate to exam result screen
-                  // Navigator.push(context, MaterialPageRoute(
-                  //   builder: (_) => ExamResultScreen(examId: e.id),
-                  // ));
-                },
+                onTap: () {},
               ),
               if (e.isPassed) ...[
                 const SizedBox(width: 6),
-                // Generate / view certificate
                 _ActionButton(
                   icon: Icons.workspace_premium_rounded,
                   color: AppColors.cyan,
-                  onTap: () {
-                    // Navigate to certificate screen
-                    // Navigator.push(context, MaterialPageRoute(
-                    //   builder: (_) => CertificateScreen(examId: e.id),
-                    // ));
-                  },
+                  onTap: () {},
                 ),
               ],
             ],
@@ -1795,6 +1776,7 @@ class _SummaryCard extends StatelessWidget {
     );
   }
 }
+
 // ── Floating Header ───────────────────────────────────────────────────────────
 class _FloatingHeader extends StatelessWidget {
   final String title;

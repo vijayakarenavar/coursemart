@@ -55,14 +55,21 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
       children: [
         _buildHeader(context, course),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildCourseInfoCard(context, course),
-              const SizedBox(height: 16),
-              _buildLecturesCard(context),
-              const SizedBox(height: 20),
-            ],
+          // ✅ RefreshIndicator added
+          child: RefreshIndicator(
+            onRefresh: () => context
+                .read<LectureProvider>()
+                .fetchLectures(courseId: widget.courseId),
+            color: AppColors.cyan,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildCourseInfoCard(context, course),
+                const SizedBox(height: 16),
+                _buildLecturesCard(context),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ],
@@ -74,14 +81,21 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
       children: [
         _buildHeader(context, course),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildCourseInfoCard(context, course),
-              const SizedBox(height: 16),
-              _buildLecturesCard(context),
-              const SizedBox(height: 20),
-            ],
+          // ✅ RefreshIndicator added
+          child: RefreshIndicator(
+            onRefresh: () => context
+                .read<LectureProvider>()
+                .fetchLectures(courseId: widget.courseId),
+            color: AppColors.cyan,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildCourseInfoCard(context, course),
+                const SizedBox(height: 16),
+                _buildLecturesCard(context),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ],
@@ -186,7 +200,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              // ✅ 0 Hours लपवलं
                               if ((course?.duration ?? 0) > 0) ...[
                                 _buildChip(Icons.access_time_rounded,
                                     '${course!.duration} hrs'),
@@ -257,7 +270,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                   ? Colors.white.withOpacity(0.08)
                   : const Color(0xFFEEF0F5)),
           const SizedBox(height: 12),
-          // ✅ 0 Hours लपवलं
           if (course.duration > 0) ...[
             _buildInfoRow(context, 'Duration', '${course.duration} Hours'),
             const SizedBox(height: 10),
@@ -345,7 +357,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                         context.read<LectureProvider>().refresh());
               }
               if (lp.lectures.isEmpty) return EmptyState.noLectures();
-              // ✅ Serial number 1,2,3...
               return Column(
                 children: lp.lectures
                     .asMap()
@@ -361,14 +372,11 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     );
   }
 
-  // ✅ serialNo parameter
-  // ✅ serialNo parameter
   Widget _buildLectureTile(
       BuildContext context, Lecture lecture, int serialNo) {
     final isReady = lecture.isReady;
 
     return GestureDetector(
-      // ✅ आता कोणत्याही स्टेटसवर (Processing/Uploading/Failed/Ready) क्लिक केल्यावर व्हिडिओ पेजवर जाईल
       onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
