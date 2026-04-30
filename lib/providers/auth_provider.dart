@@ -30,6 +30,12 @@ class AuthProvider extends ChangeNotifier {
   bool get hasError => _status == AuthStatus.error;
   String get studentName => _student?.name ?? 'Student';
   String get studentEmail => _student?.email ?? '';
+  String get studentUsername => _student?.username ?? '';
+  String get studentCreatedAt => _student?.createdAt ?? '';
+  String get studentRollNumber => _student?.rollNumber ?? '';
+  String get studentCollege => _student?.collegeName ?? '';
+  int get enrolledCoursesCount => _student?.enrolledCourses.length ?? 0;
+  List<EnrolledCourse> get enrolledCourses => _student?.enrolledCourses ?? [];
 
   void _safeNotify() {
     if (hasListeners) notifyListeners();

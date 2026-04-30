@@ -13,6 +13,8 @@ class Student {
   final String rollNumber;
   final String email;
   final String collegeName;
+  final String username;
+  final String createdAt;
   final List<EnrolledCourse> enrolledCourses;
 
   const Student({
@@ -21,12 +23,12 @@ class Student {
     required this.rollNumber,
     required this.email,
     required this.collegeName,
+    this.username = '',
+    this.createdAt = '',
     this.enrolledCourses = const [],
   });
 
   /// Create a Student from JSON map
-  ///
-  /// Handles null safety and provides default values
   factory Student.fromJson(Map<String, dynamic> json) {
     // ✅ collegeId object मधून name काढा
     String collegeName = 'Unknown College';
@@ -46,6 +48,8 @@ class Student {
       rollNumber: json['rollNumber'] ?? '',
       email: json['email'] ?? '',
       collegeName: collegeName,
+      username: json['username'] ?? '',
+      createdAt: json['createdAt'] ?? '',
       enrolledCourses: json['enrolledCourses'] != null
           ? (json['enrolledCourses'] as List)
           .map((course) => EnrolledCourse.fromJson(course))
@@ -62,6 +66,8 @@ class Student {
       'rollNumber': rollNumber,
       'email': email,
       'collegeName': collegeName,
+      'username': username,
+      'createdAt': createdAt,
       'enrolledCourses': enrolledCourses.map((c) => c.toJson()).toList(),
     };
   }
@@ -73,6 +79,8 @@ class Student {
     String? rollNumber,
     String? email,
     String? collegeName,
+    String? username,
+    String? createdAt,
     List<EnrolledCourse>? enrolledCourses,
   }) {
     return Student(
@@ -81,6 +89,8 @@ class Student {
       rollNumber: rollNumber ?? this.rollNumber,
       email: email ?? this.email,
       collegeName: collegeName ?? this.collegeName,
+      username: username ?? this.username,
+      createdAt: createdAt ?? this.createdAt,
       enrolledCourses: enrolledCourses ?? this.enrolledCourses,
     );
   }

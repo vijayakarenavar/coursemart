@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import '../../models/certificate.dart';
 import '../../models/exam_history.dart';
 import '../../providers/certificate_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/course_provider.dart';
@@ -21,6 +22,8 @@ import '../../widgets/empty_state.dart';
 import '../course/course_details_screen.dart';
 import '../profile/profile_screen.dart';
 import '../../models/course.dart';
+import '../../config/feature_flags.dart';
+import 'notifications_screen.dart'; // ✅ Feature Flags
 
 /// Responsive helper
 class _Responsive {
@@ -51,11 +54,12 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    _HomeTab(),
-    _CoursesTab(),
-    _ProgressTab(),
-    _CertificatesTab(),
+  // ✅ Feature flag: showProgressTab false असेल तर _ProgressTab() येणार नाही
+  List<Widget> get _screens => [
+    const _HomeTab(),
+    const _CoursesTab(),
+    if (FeatureFlags.showProgressTab) const _ProgressTab(),
+    const _CertificatesTab(),
   ];
 
   @override
@@ -143,10 +147,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   List<Widget> _navItems(BuildContext context, {bool vertical = false}) {
+    // ✅ Feature flag: showProgressTab false असेल तर Progress nav item येणार नाही
     final items = [
       (Icons.home_rounded, 'Home'),
       (Icons.menu_book_rounded, 'Courses'),
-      (Icons.bar_chart_rounded, 'Progress'),
+      if (FeatureFlags.showProgressTab)
+        (Icons.bar_chart_rounded, 'Progress'),
       (Icons.workspace_premium_rounded, 'Certs'),
     ];
 
@@ -355,22 +361,22 @@ class _HomeTabState extends State<_HomeTab> {
               const Spacer(),
 
               // Notification bell
-              GestureDetector(
-                onTap: () {},
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.notifications_outlined,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                ),
-              ),
+              // GestureDetector(
+              //   onTap: () {},
+              //   child: Container(
+              //     width: 36,
+              //     height: 36,
+              //     decoration: BoxDecoration(
+              //       color: Colors.white.withOpacity(0.1),
+              //       borderRadius: BorderRadius.circular(12),
+              //     ),
+              //     child: const Icon(
+              //       Icons.notifications_outlined,
+              //       color: Colors.white,
+              //       size: 18,
+              //     ),
+              //   ),
+              // ),
               const SizedBox(width: 12),
 
               // Avatar
