@@ -24,6 +24,7 @@ import '../profile/profile_screen.dart';
 import '../../models/course.dart';
 import '../../config/feature_flags.dart';
 import 'notifications_screen.dart'; // ✅ Feature Flags
+import '../certificates/certificate_view_screen.dart';
 
 /// Responsive helper
 class _Responsive {
@@ -1260,9 +1261,11 @@ class _CertificateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final collegeName = context.read<AuthProvider>().student?.collegeName ?? '';
+
     return Container(
       margin: EdgeInsets.fromLTRB(hp, 0, hp, 16),
-      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.cardOf(context),
         borderRadius: BorderRadius.circular(20),
@@ -1277,126 +1280,211 @@ class _CertificateCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      colors: [AppColors.cyan, AppColors.cyanDark]),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Center(
-                    child: Text('🏆', style: TextStyle(fontSize: 22))),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      cert.courseTitle,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textOf(context),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      cert.certificateNumber,
-                      style: TextStyle(
-                          fontSize: 11, color: AppColors.text2Of(context)),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.cyan,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Grade ${cert.grade}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Divider(
-            height: 1,
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white.withOpacity(0.08)
-                : const Color(0xFFEEF0F5),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _certDetail(context, '📊 Score',
-                  '${cert.percentage.toStringAsFixed(1)}%'),
-              const SizedBox(width: 16),
-              _certDetail(context, '📅 Issued', cert.formattedDate),
-              const SizedBox(width: 16),
-              _certDetail(
-                  context, '✅ Status', cert.status.toUpperCase()),
-            ],
-          ),
-          const SizedBox(height: 12),
+
+          // ── Dark top banner ──
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.cyanLight,
-              borderRadius: BorderRadius.circular(10),
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
             ),
-            child: Row(
+            child: Column(
               children: [
-                const Icon(Icons.verified_outlined,
-                    size: 14, color: AppColors.cyan),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Verification: ${cert.verificationCode}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.cyan,
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 2,
                     ),
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.verified_rounded,
+                      color: Color(0xFFFFBF00),
+                      size: 26,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'CERTIFICATE OF COMPLETION',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.5,
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
 
-  Widget _certDetail(BuildContext context, String label, String value) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: TextStyle(
-                  fontSize: 10, color: AppColors.text2Of(context))),
-          const SizedBox(height: 2),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textOf(context))),
+          // ── Bottom content ──
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+
+                // ── Course name ──
+                Text(
+                  cert.courseTitle,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textOf(context),
+                  ),
+                ),
+
+                // ── College name ──
+                if (collegeName.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.business_rounded,
+                        size: 12,
+                        color: AppColors.text2Of(context),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        collegeName,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.text2Of(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 12),
+
+                // ── Status row ──
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Status',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.text2Of(context),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: Color(0xFF4CAF81),
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          cert.status[0].toUpperCase() +
+                              cert.status.substring(1),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF4CAF81),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // ── Issued On row ──
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Issued On',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.text2Of(context),
+                      ),
+                    ),
+                    Text(
+                      cert.formattedDate,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textOf(context),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // ── Certificate No ──
+                Text(
+                  'Certificate No',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.text2Of(context),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : const Color(0xFFF0F4F8),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    cert.certificateNumber,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textOf(context),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // ── View & Download button ──
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CertificateViewScreen(cert: cert),
+                      ),
+                    ),
+                    icon: const Icon(Icons.download_rounded, size: 16),
+                    label: const Text(
+                      'View & Download',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
