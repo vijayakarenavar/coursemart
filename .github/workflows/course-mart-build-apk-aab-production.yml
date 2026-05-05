@@ -68,7 +68,7 @@ jobs:
           printf "storePassword=${{ secrets.KEYSTORE_PASSWORD }}\n" > android/key.properties
           printf "keyPassword=${{ secrets.KEY_PASSWORD }}\n" >> android/key.properties
           printf "keyAlias=${{ secrets.KEY_ALIAS }}\n" >> android/key.properties
-          printf "storeFile=coursemart.keystore\n" >> android/key.properties
+          printf "storeFile=../coursemart.keystore\n" >> android/key.properties
 
       # 9. Build Release APK
       - name: Build Release APK
