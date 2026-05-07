@@ -85,10 +85,12 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('⚠️ Logout error: $e');
     } finally {
+      await _secureStorage.clearCredentials(); // ✅ हे add केलं
       _reset();
       _safeNotify();
     }
   }
+
 
   Future<void> refreshProfile() async {
     try {
