@@ -458,16 +458,25 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   Widget _buildDetailRow(BuildContext context, IconData icon, String label, String value) =>
       Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 16, color: AppColors.text2Of(context)),
           const SizedBox(width: 8),
           Text(label, style: TextStyle(fontSize: 13, color: AppColors.text2Of(context))),
-          const Spacer(),
-          Text(value,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
               style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textOf(context))),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textOf(context),
+              ),
+              textAlign: TextAlign.end,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       );
 
