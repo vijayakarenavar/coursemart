@@ -15,11 +15,12 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.coursemart.coursemart_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
+    buildToolsVersion = "36.0.0"
 
     compileOptions {
-        isCoreLibraryDesugaringEnabled = true  // ✅ HE ADD KELA
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -56,7 +57,6 @@ flutter {
     source = "../.."
 }
 
-// ✅ HE ADD KELA
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
