@@ -138,18 +138,24 @@ class ApiService {
   // ==================== FORGOT PASSWORD APIs ====================
 
   /// Send forgot password request — returns reset token
-  Future<String> forgotPassword({required String email}) async {
+  Future<String?> forgotPassword({required String email}) async {
     try {
       final response = await _dio.post(
-        ApiConfig.forgotPassword, // '/auth/forgot-password'
+        ApiConfig.forgotPassword,
         data: {'email': email},
       );
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
-        final token = data['resetToken'] as String?;
-        if (token != null) return token;
-        throw const ApiException(message: 'Reset token not received from server');
+        debugPrint('🔍 Forgot Password Response: $data');
+
+        final token = data['resetToken'];
+
+        // Production: token null/undefined — email गेली
+        if (token == null || token == 'undefined') return null;
+
+        // Development: token directly मिळतो
+        return token as String;
       } else {
         final message = _extractErrorMessage(response.data);
         throw ApiException(
@@ -172,7 +178,7 @@ class ApiService {
   }) async {
     try {
       final response = await _dio.post(
-        '/auth/reset-password/$token',
+        '${ApiConfig.resetPassword}/$token',
         data: {'newPassword': newPassword},
       );
 
@@ -192,7 +198,6 @@ class ApiService {
       );
     }
   }
-
   // ==================== STUDENT APIs ====================
 
   /// Get student profile

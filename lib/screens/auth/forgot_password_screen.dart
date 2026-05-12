@@ -32,21 +32,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      // token directly मिळतो — OTP screen नाही
       final token = await context
           .read<AuthProvider>()
           .forgotPassword(email: _emailController.text.trim());
 
       if (!mounted) return;
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ResetPasswordScreen(
-            token: token, // email नाही, token पाठवतो
+      if (token != null) {
+        // Development mode — token मिळाला, directly reset screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ResetPasswordScreen(token: token),
           ),
-        ),
-      );
+        );
+      } else {
+        // Production mode — email गेली
+        showSuccessSnackBar(
+          context,
+          'Password reset link sent to your email! Please check your inbox.',
+        );
+        await Future.delayed(const Duration(seconds: 2));
+        if (!mounted) return;
+        Navigator.popUntil(context, (route) => route.isFirst);
+      }
     } catch (e) {
       if (!mounted) return;
       showErrorSnackBar(context, getErrorMessage(e));
