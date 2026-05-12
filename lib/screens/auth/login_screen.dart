@@ -132,19 +132,18 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              RichText(
-                text: const TextSpan(
-                  children: [
-                    TextSpan(text: 'NO', style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1)),
-                    TextSpan(text: 'V', style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: AppColors.cyan, letterSpacing: -1)),
-                    TextSpan(text: 'AA', style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1)),
-                  ],
-                ),
+              Image.asset(
+                'assets/images/novaa.png',  // ← logo इथे
+                height: 90,
               ),
               const SizedBox(height: 8),
               Text(
                 'CourseMart Student Portal',
-                style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.5), letterSpacing: 0.3),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white.withOpacity(0.5),
+                  letterSpacing: 0.3,
+                ),
               ),
             ],
           ),
