@@ -10,6 +10,7 @@ import '../../utils/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/error_handler.dart';
 import 'forgot_password_screen.dart';
+import '../../services/secure_storage.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,13 +38,19 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
       final authProvider = context.read<AuthProvider>();
       final success = await authProvider.login(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+        email: email,
+        password: password,
       );
       if (!mounted) return;
-      if (!success) {
+      if (success) {
+        // ✅ WebView auto-login साठी credentials save करा
+        await SecureStorage().saveCredentials(email: email, password: password);
+      } else {
         showErrorSnackBar(context, authProvider.errorMessage ?? 'Login failed');
       }
     } catch (e) {
@@ -125,19 +132,18 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              RichText(
-                text: const TextSpan(
-                  children: [
-                    TextSpan(text: 'NO', style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1)),
-                    TextSpan(text: 'V', style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: AppColors.cyan, letterSpacing: -1)),
-                    TextSpan(text: 'AA', style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1)),
-                  ],
-                ),
+              Image.asset(
+                'assets/images/novaa.png',  // ← logo इथे
+                height: 90,
               ),
               const SizedBox(height: 8),
               Text(
                 'CourseMart Student Portal',
-                style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.5), letterSpacing: 0.3),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white.withOpacity(0.5),
+                  letterSpacing: 0.3,
+                ),
               ),
             ],
           ),

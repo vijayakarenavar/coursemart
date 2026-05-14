@@ -85,10 +85,12 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('⚠️ Logout error: $e');
     } finally {
+      await _secureStorage.clearCredentials(); // ✅ हे add केलं
       _reset();
       _safeNotify();
     }
   }
+
 
   Future<void> refreshProfile() async {
     try {
@@ -120,11 +122,11 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<String> forgotPassword({required String email}) async {
+  Future<String?> forgotPassword({required String email}) async {
     try {
       final token = await _apiService.forgotPassword(email: email);
-      debugPrint('✅ Reset token received');
-      return token;
+      debugPrint('✅ Reset token: $token');
+      return token; // null = email गेली, String = dev mode token
     } catch (e) {
       debugPrint('❌ Forgot password error: $e');
       rethrow;

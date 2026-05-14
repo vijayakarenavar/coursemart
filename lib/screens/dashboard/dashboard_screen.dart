@@ -52,7 +52,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
 
-  // ✅ Feature flag: showProgressTab false असेल तर _ProgressTab() येणार नाही
   List<Widget> get _screens => [
     const _HomeTab(),
     const _CoursesTab(),
@@ -78,7 +77,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Scaffold(
         backgroundColor: AppColors.bgOf(context),
-        // ✅ Landscape मध्ये bottom nav → side nav
         body: isLandscape
             ? Row(
           children: [
@@ -93,7 +91,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ── Bottom Nav (Portrait) ──
   Widget _buildBottomNav(BuildContext context, bool isDark) {
     return Container(
       decoration: BoxDecoration(
@@ -119,7 +116,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ── Side Nav (Landscape) ──
   Widget _buildSideNav(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return SafeArea(
@@ -145,7 +141,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   List<Widget> _navItems(BuildContext context, {bool vertical = false}) {
-    // ✅ Feature flag: showProgressTab false असेल तर Progress nav item येणार नाही
     final items = [
       (Icons.home_rounded, 'Home'),
       (Icons.menu_book_rounded, 'Courses'),
@@ -243,7 +238,6 @@ class _HomeTabState extends State<_HomeTab> {
 
   @override
   Widget build(BuildContext context) {
-    final isLandscape = _Responsive.isLandscape(context);
     final hp = _Responsive.horizontalPadding(context);
 
     return Scaffold(
@@ -267,7 +261,6 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // ── Portrait: single column scroll ──
   Widget _buildPortraitContent(
       BuildContext context, CourseProvider cp, double hp) {
     return ListView(
@@ -285,43 +278,6 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // ── Landscape: two column layout ──
-  Widget _buildLandscapeContent(
-      BuildContext context, CourseProvider cp, double hp) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Left column: welcome + stats + progress
-        Expanded(
-          flex: 4,
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              _buildWelcomeCard(context, hp),
-              SizedBox(height: hp),
-              _buildStatGrid(context, cp, hp),
-              SizedBox(height: hp),
-              _buildProgressCard(context, cp, hp),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-        // Right column: course list
-        Expanded(
-          flex: 6,
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              _buildCourseList(context, cp, hp),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Header ──
   Widget _buildHeader(BuildContext context) {
     return Container(
       color: AppColors.primary,
@@ -357,8 +313,6 @@ class _HomeTabState extends State<_HomeTab> {
               ),
               const Spacer(),
               const SizedBox(width: 12),
-
-              // Avatar
               Consumer<AuthProvider>(
                 builder: (context, auth, _) {
                   final initial = auth.studentName.isNotEmpty
@@ -400,7 +354,6 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // ── Welcome Card ──
   Widget _buildWelcomeCard(BuildContext context, double hp) {
     return Padding(
       padding: EdgeInsets.fromLTRB(hp, hp, hp, 0),
@@ -476,7 +429,6 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // ── Stat Grid ──
   Widget _buildStatGrid(
       BuildContext context, CourseProvider cp, double hp) {
     final enrolled = cp.courseCount;
@@ -525,7 +477,6 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // ── Progress Card ──
   Widget _buildProgressCard(
       BuildContext context, CourseProvider cp, double hp) {
     final pct = (cp.overallProgress * 100).toInt();
@@ -591,12 +542,11 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // ── Course List ──
   Widget _buildCourseList(
       BuildContext context, CourseProvider cp, double hp) {
     if (cp.isLoading && cp.courseCount == 0) {
-      return Column(
-        children: const [
+      return const Column(
+        children: [
           CourseCardShimmer(),
           CourseCardShimmer(),
           CourseCardShimmer(),
@@ -617,7 +567,6 @@ class _HomeTabState extends State<_HomeTab> {
       );
     }
 
-    // ✅ Tablet/Landscape: grid layout for courses
     if (_Responsive.isTablet(context)) {
       return Padding(
         padding: EdgeInsets.symmetric(horizontal: hp),
@@ -643,7 +592,6 @@ class _HomeTabState extends State<_HomeTab> {
       );
     }
 
-    // Phone portrait: single column
     return Column(
       children: cp.filteredCourses.map((course) {
         return Padding(
@@ -752,11 +700,10 @@ class _CoursesTab extends StatelessWidget {
                   subtitle: 'View all your enrolled courses',
                 ),
                 if (cp.isLoading && cp.courseCount == 0)
-                  Center(
+                  const Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: const CircularProgressIndicator(
-                          color: AppColors.cyan),
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgressIndicator(color: AppColors.cyan),
                     ),
                   )
                 else if (isTablet)
@@ -1112,7 +1059,8 @@ class _CertificatesTabState extends State<_CertificatesTab> {
                 borderRadius: BorderRadius.circular(30),
               ),
               child: const Center(
-                  child: Text('🎖️', style: TextStyle(fontSize: 48))),
+                child: Text('🎖️', style: TextStyle(fontSize: 48)),
+              ),
             ),
             const SizedBox(height: 16),
             Text(
@@ -1127,9 +1075,10 @@ class _CertificatesTabState extends State<_CertificatesTab> {
             Text(
               'Pass your exams to earn certificates!',
               style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.text2Of(context),
-                  height: 1.6),
+                fontSize: 13,
+                color: AppColors.text2Of(context),
+                height: 1.6,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1149,7 +1098,6 @@ class _CertificateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final collegeName = context.read<AuthProvider>().student?.collegeName ?? '';
 
     return Container(
       margin: EdgeInsets.fromLTRB(hp, 0, hp, 16),
@@ -1167,8 +1115,7 @@ class _CertificateCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          // ── Dark top banner ──
+          // ── Top banner ──
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 20),
@@ -1214,16 +1161,15 @@ class _CertificateCard extends StatelessWidget {
             ),
           ),
 
-          // ── Bottom content ──
+          // ── Content ──
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
-                // ── Course name ──
+                // Course name
                 Text(
-                  cert.courseTitle,
+                  cert.courseName,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
@@ -1231,8 +1177,8 @@ class _CertificateCard extends StatelessWidget {
                   ),
                 ),
 
-                // ── College name ──
-                if (collegeName.isNotEmpty) ...[
+                // College name
+                if (cert.collegeName.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -1242,53 +1188,23 @@ class _CertificateCard extends StatelessWidget {
                         color: AppColors.text2Of(context),
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        collegeName,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.text2Of(context),
+                      Expanded(
+                        child: Text(
+                          cert.collegeName,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.text2Of(context),
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
                 ],
+
                 const SizedBox(height: 12),
 
-                // ── Status row ──
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Status',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.text2Of(context),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.check_circle_rounded,
-                          color: Color(0xFF4CAF81),
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          cert.status[0].toUpperCase() +
-                              cert.status.substring(1),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF4CAF81),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // ── Issued On row ──
+                // Issued On
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -1311,7 +1227,7 @@ class _CertificateCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // ── Certificate No ──
+                // Certificate No
                 Text(
                   'Certificate No',
                   style: TextStyle(
@@ -1343,29 +1259,44 @@ class _CertificateCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
 
-                // ── View & Download button ──
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CertificateViewScreen(cert: cert),
-                      ),
+                // View & Download button — cyan gradient (login button sarkha)
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CertificateViewScreen(cert: cert),
                     ),
-                    icon: const Icon(Icons.download_rounded, size: 16),
-                    label: const Text(
-                      'View & Download',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.cyan, AppColors.cyanDark],
                       ),
-                      elevation: 0,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.cyan.withOpacity(0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.download_rounded, color: Colors.white, size: 17),
+                        SizedBox(width: 8),
+                        Text(
+                          'View & Download',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

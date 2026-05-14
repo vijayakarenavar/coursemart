@@ -382,18 +382,13 @@ class LoadingScreen extends StatelessWidget {
     return Stack(
       children: [
         Positioned(
-          top: -40,
-          right: -40,
+          top: -40, right: -40,
           child: Container(
-            width: 200,
-            height: 200,
+            width: 220, height: 220,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
-                colors: [
-                  AppColors.cyan.withOpacity(0.15),
-                  Colors.transparent,
-                ],
+                colors: [AppColors.cyan.withOpacity(0.18), Colors.transparent],
               ),
             ),
           ),
@@ -402,38 +397,9 @@ class LoadingScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              RichText(
-                text: const TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'NO',
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: -1,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'V',
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.cyan,
-                        letterSpacing: -1,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'AA',
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: -1,
-                      ),
-                    ),
-                  ],
-                ),
+              Image.asset(
+                'assets/images/novaa.png',  // ← logo इथे
+                height: 90,
               ),
               const SizedBox(height: 8),
               Text(
@@ -441,6 +407,7 @@ class LoadingScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   color: Colors.white.withOpacity(0.5),
+                  letterSpacing: 0.3,
                 ),
               ),
             ],
