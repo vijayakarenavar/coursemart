@@ -45,7 +45,7 @@ class AuthInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     // Log successful responses in debug mode
     if (kDebugMode) {
-      debugPrint('✅ [${response.statusCode}] ${response.requestOptions.uri}');
+      if (kDebugMode) debugPrint('✅ [${response.statusCode}] ${response.requestOptions.uri}');
     }
     handler.next(response);
   }
@@ -54,7 +54,7 @@ class AuthInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) {
     // Handle 401 Unauthorized - token expired or invalid
     if (err.response?.statusCode == 401) {
-      debugPrint('❌ 401 Unauthorized - Token expired or invalid');
+      if (kDebugMode) debugPrint('❌ 401 Unauthorized - Token expired or invalid');
 
       // Clear token from secure storage
       _secureStorage.clearAuthToken();
@@ -65,7 +65,7 @@ class AuthInterceptor extends Interceptor {
 
     // Log errors in debug mode
     if (kDebugMode) {
-      debugPrint(
+      if (kDebugMode) debugPrint(
         '❌ [${err.response?.statusCode}] ${err.requestOptions.uri}\n'
         'Error: ${err.message}',
       );
@@ -82,7 +82,7 @@ class LoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (kDebugMode) {
-      debugPrint(
+      if (kDebugMode) debugPrint(
         '🌐 [REQUEST] ${options.method} ${options.uri}\n'
         'Headers: ${options.headers}\n'
         'Data: ${options.data}',
@@ -94,7 +94,7 @@ class LoggingInterceptor extends Interceptor {
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (kDebugMode) {
-      debugPrint(
+      if (kDebugMode) debugPrint(
         '📥 [RESPONSE] ${response.statusCode} ${response.requestOptions.uri}\n'
         'Data: ${response.data}',
       );
@@ -105,7 +105,7 @@ class LoggingInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     if (kDebugMode) {
-      debugPrint(
+      if (kDebugMode) debugPrint(
         '⚠️ [ERROR] ${err.requestOptions.uri}\n'
         'Type: ${err.type}\n'
         'Message: ${err.message}\n'
@@ -150,7 +150,7 @@ class RetryInterceptor extends Interceptor {
       final delay = retryInterval * (1 << (retries - 1));
 
       if (kDebugMode) {
-        debugPrint(
+        if (kDebugMode) debugPrint(
           '🔄 Retrying request ($retries/$maxRetries) after ${delay.inSeconds}s',
         );
       }

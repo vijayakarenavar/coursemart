@@ -36,7 +36,7 @@ class LectureProvider extends ChangeNotifier {
         _courseId == courseId &&
         _lastFetchedAt != null &&
         DateTime.now().difference(_lastFetchedAt!) < const Duration(minutes: 5)) {
-      debugPrint('💾 Using cached lecture data');
+      if (kDebugMode) debugPrint('💾 Using cached lecture data');
       return true;
     }
 
@@ -50,11 +50,11 @@ class LectureProvider extends ChangeNotifier {
       _lectures = lectures;
       _lastFetchedAt = DateTime.now();
       _isLoading = false;
-      debugPrint('✅ Fetched ${lectures.length} lectures for course $courseId');
+      if (kDebugMode) debugPrint('✅ Fetched ${lectures.length} lectures for course $courseId');
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('❌ Fetch lectures error: $e');
+      if (kDebugMode) debugPrint('❌ Fetch lectures error: $e');
       _setError(e); // ✅ Fixed: e instead of e.toString()
       _isLoading = false;
       notifyListeners();
@@ -73,7 +73,7 @@ class LectureProvider extends ChangeNotifier {
       notifyListeners();
       return lecture;
     } catch (e) {
-      debugPrint('❌ Get lecture details error: $e');
+      if (kDebugMode) debugPrint('❌ Get lecture details error: $e');
       _setError(e); // ✅ Fixed: e instead of e.toString()
       _isLoading = false;
       notifyListeners();

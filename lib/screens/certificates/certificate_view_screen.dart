@@ -4,6 +4,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../models/certificate.dart';
 import '../../services/secure_storage.dart';
@@ -43,8 +44,8 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
     // ✅ Certificate model मधला certificateUrl वापर (attemptId based)
     final url = widget.cert.certificateUrl;
 
-    debugPrint('🔗 Certificate URL: $url');
-    debugPrint('🔑 Token present: ${token != null}');
+    if (kDebugMode) debugPrint('🔗 Certificate URL: $url');
+    if (kDebugMode) debugPrint('🔑 Token present: ${token != null}');
 
     final controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -52,25 +53,25 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (url) {
-            debugPrint('📄 Page started: $url');
+            if (kDebugMode) debugPrint('📄 Page started: $url');
             if (mounted) setState(() {
               _isLoading = true;
               _hasError = false;
             });
           },
           onPageFinished: (url) {
-            debugPrint('✅ Page finished: $url');
+            if (kDebugMode) debugPrint('✅ Page finished: $url');
             if (mounted) setState(() => _isLoading = false);
           },
           onWebResourceError: (error) {
-            debugPrint('❌ WebView error: ${error.description}');
+            if (kDebugMode) debugPrint('❌ WebView error: ${error.description}');
             if (mounted) setState(() {
               _isLoading = false;
               _hasError = true;
             });
           },
           onNavigationRequest: (request) {
-            debugPrint('🔀 Navigation: ${request.url}');
+            if (kDebugMode) debugPrint('🔀 Navigation: ${request.url}');
             return NavigationDecision.navigate;
           },
         ),

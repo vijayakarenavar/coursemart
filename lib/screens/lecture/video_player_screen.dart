@@ -4,6 +4,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:provider/provider.dart';
@@ -60,13 +61,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       await context.read<LectureProvider>().getLectureDetails(widget.lectureId);
       if (!mounted) return;
 
-      debugPrint('=== LECTURE DEBUG ===');
-      debugPrint('ID: ${lecture.id}');
-      debugPrint('Topic: ${lecture.topic}');
-      debugPrint('hasVideo: ${lecture.hasVideo}');
-      debugPrint('isMultiPart: ${lecture.isMultiPart}');
-      debugPrint('parts: ${lecture.parts.map((p) => "part${p.partNumber}→${p.youtubeVideoId}").toList()}');
-      debugPrint('====================');
+      if (kDebugMode) debugPrint('=== LECTURE DEBUG ===');
+      if (kDebugMode) debugPrint('ID: ${lecture.id}');
+      if (kDebugMode) debugPrint('Topic: ${lecture.topic}');
+      if (kDebugMode) debugPrint('hasVideo: ${lecture.hasVideo}');
+      if (kDebugMode) debugPrint('isMultiPart: ${lecture.isMultiPart}');
+      if (kDebugMode) debugPrint('parts: ${lecture.parts.map((p) => "part${p.partNumber}→${p.youtubeVideoId}").toList()}');
+      if (kDebugMode) debugPrint('====================');
 
       final firstReady = lecture.readyParts.isNotEmpty ? lecture.readyParts.first : null;
 
@@ -109,7 +110,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     if (!part.hasVideo) return;
     if (_selectedPartNumber == part.partNumber) return;
 
-    debugPrint('>>> Switching to Part ${part.partNumber}, videoId: ${part.youtubeVideoId}');
+    if (kDebugMode) debugPrint('>>> Switching to Part ${part.partNumber}, videoId: ${part.youtubeVideoId}');
 
     setState(() {
       _selectedPartNumber = part.partNumber;

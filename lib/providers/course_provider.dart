@@ -41,7 +41,7 @@ class CourseProvider extends ChangeNotifier {
     if (!forceRefresh &&
         _lastFetchedAt != null &&
         DateTime.now().difference(_lastFetchedAt!) < const Duration(minutes: 5)) {
-      debugPrint('💾 Using cached course data');
+      if (kDebugMode) debugPrint('💾 Using cached course data');
       return true;
     }
 
@@ -54,11 +54,11 @@ class CourseProvider extends ChangeNotifier {
       _courses = courses;
       _lastFetchedAt = DateTime.now();
       _isLoading = false;
-      debugPrint('✅ Fetched ${courses.length} courses');
+      if (kDebugMode) debugPrint('✅ Fetched ${courses.length} courses');
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('❌ Fetch courses error: $e');
+      if (kDebugMode) debugPrint('❌ Fetch courses error: $e');
       _setError(e); // ✅ Fixed: e instead of e.toString()
       _isLoading = false;
       notifyListeners();

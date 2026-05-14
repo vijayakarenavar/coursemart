@@ -68,7 +68,7 @@ class ApiService {
         final token = data['token'] as String?;
         if (token != null) {
           await _secureStorage.saveAuthToken(token);
-          debugPrint('✅ Token saved to secure storage');
+          if (kDebugMode) debugPrint('✅ Token saved to secure storage');
         }
 
         return data;
@@ -95,14 +95,14 @@ class ApiService {
         final response = await _dio.post(ApiConfig.logout);
 
         if (response.statusCode != 200) {
-          debugPrint('⚠️ Server logout failed, but clearing local token');
+          if (kDebugMode) debugPrint('⚠️ Server logout failed, but clearing local token');
         }
       }
     } catch (e) {
-      debugPrint('⚠️ Logout error: $e');
+      if (kDebugMode) debugPrint('⚠️ Logout error: $e');
     } finally {
       await _secureStorage.clearAuthToken();
-      debugPrint('🗑️ Token cleared from secure storage');
+      if (kDebugMode) debugPrint('🗑️ Token cleared from secure storage');
     }
   }
 
@@ -147,7 +147,7 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
-        debugPrint('🔍 Forgot Password Response: $data');
+        if (kDebugMode) debugPrint('🔍 Forgot Password Response: $data');
 
         final token = data['resetToken'];
 
@@ -457,10 +457,10 @@ class ApiService {
           .map((e) => ExamHistory.fromJson(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
-      debugPrint('❌ getExamHistory: ${e.response?.statusCode} ${e.message}');
+      if (kDebugMode) debugPrint('❌ getExamHistory: ${e.response?.statusCode} ${e.message}');
       throw Exception('Could not load exam history. Please try again.');
     } catch (e) {
-      debugPrint('❌ getExamHistory unexpected: $e');
+      if (kDebugMode) debugPrint('❌ getExamHistory unexpected: $e');
       throw Exception('Something went wrong. Please try again.');
     }
   }

@@ -54,7 +54,7 @@ class AuthProvider extends ChangeNotifier {
       }
       await _fetchProfile();
     } catch (e) {
-      debugPrint('❌ Auth init error: $e');
+      if (kDebugMode) debugPrint('❌ Auth init error: $e');
       _status = AuthStatus.unauthenticated;
       _setError(e); // ✅ Fixed: e instead of e.toString()
       _safeNotify();
@@ -68,10 +68,10 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _apiService.login(email: email, password: password);
       await _fetchProfile();
-      debugPrint('✅ Login successful: ${_student?.name}');
+      if (kDebugMode) debugPrint('✅ Login successful: ${_student?.name}');
       return true;
     } catch (e) {
-      debugPrint('❌ Login error: $e');
+      if (kDebugMode) debugPrint('❌ Login error: $e');
       _setError(e); // ✅ Fixed: e instead of e.toString()
       _status = AuthStatus.unauthenticated;
       _safeNotify();
@@ -83,7 +83,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _apiService.logout();
     } catch (e) {
-      debugPrint('⚠️ Logout error: $e');
+      if (kDebugMode) debugPrint('⚠️ Logout error: $e');
     } finally {
       await _secureStorage.clearCredentials(); // ✅ हे add केलं
       _reset();
@@ -96,7 +96,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _fetchProfile();
     } catch (e) {
-      debugPrint('❌ Profile refresh error: $e');
+      if (kDebugMode) debugPrint('❌ Profile refresh error: $e');
       _setError(e); // ✅ Fixed: e instead of e.toString()
       _safeNotify();
     }
@@ -116,7 +116,7 @@ class AuthProvider extends ChangeNotifier {
       );
       return message;
     } catch (e) {
-      debugPrint('❌ Change password error: $e');
+      if (kDebugMode) debugPrint('❌ Change password error: $e');
       _setError(e); // ✅ Fixed: e instead of e.toString()
       rethrow;
     }
@@ -125,10 +125,10 @@ class AuthProvider extends ChangeNotifier {
   Future<String?> forgotPassword({required String email}) async {
     try {
       final token = await _apiService.forgotPassword(email: email);
-      debugPrint('✅ Reset token: $token');
+      if (kDebugMode) debugPrint('✅ Reset token: $token');
       return token; // null = email गेली, String = dev mode token
     } catch (e) {
-      debugPrint('❌ Forgot password error: $e');
+      if (kDebugMode) debugPrint('❌ Forgot password error: $e');
       rethrow;
     }
   }
@@ -142,15 +142,15 @@ class AuthProvider extends ChangeNotifier {
         token: token,
         newPassword: newPassword,
       );
-      debugPrint('✅ Password reset successfully');
+      if (kDebugMode) debugPrint('✅ Password reset successfully');
     } catch (e) {
-      debugPrint('❌ Reset password error: $e');
+      if (kDebugMode) debugPrint('❌ Reset password error: $e');
       rethrow;
     }
   }
 
   void handleUnauthorized() {
-    debugPrint('🚨 Unauthorized - triggering logout');
+    if (kDebugMode) debugPrint('🚨 Unauthorized - triggering logout');
     _reset();
     _safeNotify();
   }
@@ -161,7 +161,7 @@ class AuthProvider extends ChangeNotifier {
       _status = AuthStatus.authenticated;
       _safeNotify();
     } catch (e) {
-      debugPrint('❌ Profile fetch error: $e');
+      if (kDebugMode) debugPrint('❌ Profile fetch error: $e');
       // ✅ Fixed: e is ApiException check instead of e.toString().contains()
       if (e is ApiException && e.statusCode == 401) {
         await _secureStorage.clearAuthToken();

@@ -52,9 +52,9 @@ class CacheManager {
       _lecturesBox = await Hive.openBox(_lecturesBoxName);
       _settingsBox = await Hive.openBox(_settingsBoxName);
 
-      debugPrint('✅ Cache manager initialized');
+      if (kDebugMode) debugPrint('✅ Cache manager initialized');
     } catch (e) {
-      debugPrint('⚠️ Cache manager initialization error: $e');
+      if (kDebugMode) debugPrint('⚠️ Cache manager initialization error: $e');
     }
   }
 
@@ -67,9 +67,9 @@ class CacheManager {
     try {
       await _profileBox.put('data', data);
       await _profileBox.put('timestamp', DateTime.now().millisecondsSinceEpoch);
-      debugPrint('💾 Profile cached');
+      if (kDebugMode) debugPrint('💾 Profile cached');
     } catch (e) {
-      debugPrint('❌ Error caching profile: $e');
+      if (kDebugMode) debugPrint('❌ Error caching profile: $e');
     }
   }
 
@@ -86,15 +86,15 @@ class CacheManager {
 
       // Check if cache is expired
       if (now.difference(cacheTime) > profileCacheDuration) {
-        debugPrint('⏰ Profile cache expired');
+        if (kDebugMode) debugPrint('⏰ Profile cache expired');
         return null;
       }
 
       final data = _profileBox.get('data') as Map<String, dynamic>?;
-      debugPrint('💾 Using cached profile');
+      if (kDebugMode) debugPrint('💾 Using cached profile');
       return data;
     } catch (e) {
-      debugPrint('❌ Error getting cached profile: $e');
+      if (kDebugMode) debugPrint('❌ Error getting cached profile: $e');
       return null;
     }
   }
@@ -102,7 +102,7 @@ class CacheManager {
   /// Clear cached profile
   Future<void> clearCachedProfile() async {
     await _profileBox.clear();
-    debugPrint('🗑️ Profile cache cleared');
+    if (kDebugMode) debugPrint('🗑️ Profile cache cleared');
   }
 
   // ==================== COURSES CACHE ====================
@@ -114,9 +114,9 @@ class CacheManager {
     try {
       await _coursesBox.put('data', data);
       await _coursesBox.put('timestamp', DateTime.now().millisecondsSinceEpoch);
-      debugPrint('💾 Courses cached');
+      if (kDebugMode) debugPrint('💾 Courses cached');
     } catch (e) {
-      debugPrint('❌ Error caching courses: $e');
+      if (kDebugMode) debugPrint('❌ Error caching courses: $e');
     }
   }
 
@@ -133,15 +133,15 @@ class CacheManager {
 
       // Check if cache is expired
       if (now.difference(cacheTime) > coursesCacheDuration) {
-        debugPrint('⏰ Courses cache expired');
+        if (kDebugMode) debugPrint('⏰ Courses cache expired');
         return null;
       }
 
       final data = _coursesBox.get('data') as List<dynamic>?;
-      debugPrint('💾 Using cached courses (${data?.length ?? 0} courses)');
+      if (kDebugMode) debugPrint('💾 Using cached courses (${data?.length ?? 0} courses)');
       return data;
     } catch (e) {
-      debugPrint('❌ Error getting cached courses: $e');
+      if (kDebugMode) debugPrint('❌ Error getting cached courses: $e');
       return null;
     }
   }
@@ -149,7 +149,7 @@ class CacheManager {
   /// Clear cached courses
   Future<void> clearCachedCourses() async {
     await _coursesBox.clear();
-    debugPrint('🗑️ Courses cache cleared');
+    if (kDebugMode) debugPrint('🗑️ Courses cache cleared');
   }
 
   // ==================== LECTURES CACHE ====================
@@ -165,9 +165,9 @@ class CacheManager {
         'course_${courseId}_timestamp',
         DateTime.now().millisecondsSinceEpoch,
       );
-      debugPrint('💾 Lectures cached for course $courseId');
+      if (kDebugMode) debugPrint('💾 Lectures cached for course $courseId');
     } catch (e) {
-      debugPrint('❌ Error caching lectures: $e');
+      if (kDebugMode) debugPrint('❌ Error caching lectures: $e');
     }
   }
 
@@ -186,15 +186,15 @@ class CacheManager {
 
       // Check if cache is expired
       if (now.difference(cacheTime) > lecturesCacheDuration) {
-        debugPrint('⏰ Lectures cache expired for course $courseId');
+        if (kDebugMode) debugPrint('⏰ Lectures cache expired for course $courseId');
         return null;
       }
 
       final data = _lecturesBox.get('course_$courseId') as List<dynamic>?;
-      debugPrint('💾 Using cached lectures for course $courseId');
+      if (kDebugMode) debugPrint('💾 Using cached lectures for course $courseId');
       return data;
     } catch (e) {
-      debugPrint('❌ Error getting cached lectures: $e');
+      if (kDebugMode) debugPrint('❌ Error getting cached lectures: $e');
       return null;
     }
   }
@@ -203,7 +203,7 @@ class CacheManager {
   Future<void> clearCachedLectures(String courseId) async {
     await _lecturesBox.delete('course_$courseId');
     await _lecturesBox.delete('course_${courseId}_timestamp');
-    debugPrint('🗑️ Lectures cache cleared for course $courseId');
+    if (kDebugMode) debugPrint('🗑️ Lectures cache cleared for course $courseId');
   }
 
   // ==================== SETTINGS CACHE ====================
@@ -236,7 +236,7 @@ class CacheManager {
     await _profileBox.clear();
     await _coursesBox.clear();
     await _lecturesBox.clear();
-    debugPrint('🗑️ All cache cleared');
+    if (kDebugMode) debugPrint('🗑️ All cache cleared');
   }
 
   /// Get cache size (approximate)
@@ -255,6 +255,6 @@ class CacheManager {
     await _coursesBox.close();
     await _lecturesBox.close();
     await _settingsBox.close();
-    debugPrint('🔒 Cache manager disposed');
+    if (kDebugMode) debugPrint('🔒 Cache manager disposed');
   }
 }

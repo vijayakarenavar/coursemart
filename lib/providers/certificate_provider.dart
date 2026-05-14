@@ -40,9 +40,9 @@ class CertificateProvider extends ChangeNotifier {
       ]);
       _certificates = results[0] as List<Certificate>;
       _examHistory = results[1] as List<ExamHistory>;
-      debugPrint('✅ Certs: ${_certificates.length}, History: ${_examHistory.length}');
+      if (kDebugMode) debugPrint('✅ Certs: ${_certificates.length}, History: ${_examHistory.length}');
     } catch (e) {
-      debugPrint('❌ CertificateProvider error: $e');
+      if (kDebugMode) debugPrint('❌ CertificateProvider error: $e');
       // ✅ Fixed: ApiException check instead of e.toString()
       if (e is ApiException) {
         _errorMessage = e.message;
