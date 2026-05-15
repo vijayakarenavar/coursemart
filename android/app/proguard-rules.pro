@@ -13,7 +13,7 @@
 -dontwarn okhttp3.**
 
 # Your app models — reverse engineering पासून वाचव
--keep class com.coursemart.coursemart_app.** { *; }
+-keep class com.coursemart.coursemart_app.MainActivity { *; }
 
 # Dart/Flutter interop
 -keepattributes *Annotation*
