@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart';
 
 /// Loads environment variables from .env file
 ///
@@ -27,12 +28,15 @@ Future<void> loadEnvironment() async {
       return true;
     }());
   } catch (e) {
-    // If .env file is not found, use default values
-    print(
-      '⚠️ Warning: .env file not found, using defaults. Create .env from .env.example',
-    );
+    if (kDebugMode) {
+      print(
+        '⚠️ Warning: .env file not found, using defaults. Create .env from .env.example',
+      );
+    }
   }
 }
+
+
 
 /// Get environment variable with fallback
 ///
