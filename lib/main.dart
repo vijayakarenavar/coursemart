@@ -19,6 +19,7 @@ import 'providers/course_provider.dart';
 import 'providers/lecture_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
+import 'screens/onboarding/onboarding_screen.dart';
 import 'utils/app_colors.dart';
 
 void main() async {
@@ -97,7 +98,7 @@ class CourseMartApp extends StatelessWidget {
 
       cardTheme: CardThemeData(
         color: AppColors.card,
-        elevation:                                  0,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
         ),
@@ -320,7 +321,18 @@ class AuthWrapper extends StatelessWidget {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               context.read<CourseProvider>().clearData();
             });
-            return const LoginScreen();
+            // ✅ Onboarding — फक्त पहिल्यांदाच दाखवतो
+            return FutureBuilder<bool>(
+              future: isOnboardingDone(),
+              builder: (context, snapshot) {
+                // Loading असताना blank screen नको
+                if (!snapshot.hasData) return const LoadingScreen();
+                // Onboarding झाली असेल तर login
+                if (snapshot.data == true) return const LoginScreen();
+                // पहिल्यांदा — onboarding दाखव
+                return const OnboardingScreen();
+              },
+            );
 
           case AuthStatus.error:
             return const LoginScreen();
@@ -382,9 +394,11 @@ class LoadingScreen extends StatelessWidget {
     return Stack(
       children: [
         Positioned(
-          top: -40, right: -40,
+          top: -40,
+          right: -40,
           child: Container(
-            width: 220, height: 220,
+            width: 220,
+            height: 220,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
@@ -398,7 +412,7 @@ class LoadingScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
-                'assets/images/novaa.png',  // ← logo इथे
+                'assets/images/novaa.png',
                 height: 90,
               ),
               const SizedBox(height: 8),
