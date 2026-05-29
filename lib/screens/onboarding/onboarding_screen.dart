@@ -11,7 +11,6 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../utils/app_colors.dart';
-import '../auth/login_screen.dart';
 
 // ── Onboarding Data ───────────────────────────────────────────────────────────
 class _OnboardingData {
@@ -100,10 +99,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_done', true);
     if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      setState(() {}); // ← AuthWrapper ला signal द्या
     }
   }
 

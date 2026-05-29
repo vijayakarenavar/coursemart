@@ -300,8 +300,21 @@ class CourseMartApp extends StatelessWidget {
 }
 
 // ── Auth Wrapper ─────────────────────────────────────────────────────────────
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  late Future<bool> _onboardingFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _onboardingFuture = isOnboardingDone(); // ✅ फक्त एकदाच Future बनतो
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -320,20 +333,18 @@ class AuthWrapper extends StatelessWidget {
           case AuthStatus.unauthenticated:
             WidgetsBinding.instance.addPostFrameCallback((_) {
               context.read<CourseProvider>().clearData();
+              setState(() {
+                _onboardingFuture = isOnboardingDone();
+              });
             });
-            // ✅ Onboarding — फक्त पहिल्यांदाच दाखवतो
             return FutureBuilder<bool>(
-              future: isOnboardingDone(),
+              future: _onboardingFuture,
               builder: (context, snapshot) {
-                // Loading असताना blank screen नको
                 if (!snapshot.hasData) return const LoadingScreen();
-                // Onboarding झाली असेल तर login
                 if (snapshot.data == true) return const LoginScreen();
-                // पहिल्यांदा — onboarding दाखव
                 return const OnboardingScreen();
               },
             );
-
           case AuthStatus.error:
             return const LoginScreen();
         }
