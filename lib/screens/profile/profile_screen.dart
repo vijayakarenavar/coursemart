@@ -1,7 +1,6 @@
 /// Profile Screen
 /// ✅ Dark Mode | ✅ Responsive | ✅ Safe Area | ✅ Landscape
 library;
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -313,7 +312,6 @@ class ProfileScreen extends StatelessWidget {
                         horizontal: 16, vertical: 13),
                     child: Row(
                       children: [
-                        // Number badge
                         Container(
                           width: 38,
                           height: 38,
@@ -337,8 +335,6 @@ class ProfileScreen extends StatelessWidget {
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textOf(context))),
                         ),
-                        Icon(Icons.chevron_right,
-                            color: AppColors.text2Of(context), size: 18),
                       ],
                     ),
                   ),
