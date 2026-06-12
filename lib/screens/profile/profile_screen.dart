@@ -3,6 +3,7 @@
 library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_dialogs.dart';
@@ -11,7 +12,6 @@ import 'change_password_screen.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  // ── Date Format Helper ────────────────────────────────────────────────────
   String _formatDate(String dateStr) {
     if (dateStr.isEmpty) return 'N/A';
     try {
@@ -172,7 +172,6 @@ class ProfileScreen extends StatelessWidget {
                     color: Colors.white,
                     letterSpacing: 0.2)),
             const SizedBox(height: 4),
-            // ── Username ──
             if (auth.studentUsername.isNotEmpty)
               Text('@${auth.studentUsername}',
                   style: TextStyle(
@@ -400,11 +399,93 @@ class ProfileScreen extends StatelessWidget {
     endIndent: 16,
   );
 
+  // ── Legal Section ─────────────────────────────────────────────────────────
+  Widget _buildLegalSection(BuildContext context, double hp) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: hp == 0 ? 0 : 0),
+      decoration: BoxDecoration(
+        color: AppColors.cardOf(context),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+            color: isDark
+                ? Colors.white.withOpacity(0.08)
+                : Colors.black.withOpacity(0.05)),
+      ),
+      child: Column(
+        children: [
+          // Privacy Policy
+          GestureDetector(
+            onTap: () => launchUrl(
+                Uri.parse('https://yourwebsite.com/privacy-policy'),
+                mode: LaunchMode.externalApplication),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38, height: 38,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE6F1FB),
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: const Icon(Icons.privacy_tip_outlined,
+                        color: Color(0xFF378ADD), size: 19),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text('Privacy Policy',
+                        style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textOf(context))),
+                  ),
+                  Icon(Icons.arrow_forward_ios_rounded,
+                      size: 14, color: AppColors.text2Of(context)),
+                ],
+              ),
+            ),
+          ),
+          _divider(context),
+          // Account Deletion
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 38, height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFBEAF0),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: const Icon(Icons.delete_outline,
+                      color: Color(0xFFD4537E), size: 19),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    'For account deletion, contact your college admin.',
+                    style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textOf(context)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Action Buttons ────────────────────────────────────────────────────────
   Widget _buildActionButtons(BuildContext context, double hp) => Padding(
     padding: EdgeInsets.symmetric(horizontal: hp == 0 ? 0 : 14),
     child: Column(
       children: [
+        // Change Password
         GestureDetector(
           onTap: () => Navigator.push(context,
               MaterialPageRoute(builder: (_) => const ChangePasswordScreen())),
@@ -437,6 +518,12 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
+
+        // Legal Section
+        _buildLegalSection(context, hp),
+        const SizedBox(height: 12),
+
+        // Logout — LAST
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
@@ -451,8 +538,7 @@ class ProfileScreen extends StatelessWidget {
                 }),
             icon: const Icon(Icons.logout, size: 18),
             label: const Text('Logout',
-                style:
-                TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.red,
               foregroundColor: Colors.white,
