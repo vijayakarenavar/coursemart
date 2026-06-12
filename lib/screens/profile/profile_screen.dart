@@ -485,7 +485,11 @@ class ProfileScreen extends StatelessWidget {
     padding: EdgeInsets.symmetric(horizontal: hp == 0 ? 0 : 14),
     child: Column(
       children: [
-        // Change Password
+        // 1. Legal Section (Privacy Policy + Account Deletion)
+        _buildLegalSection(context, hp),
+        const SizedBox(height: 12),
+
+        // 2. Change Password
         GestureDetector(
           onTap: () => Navigator.push(context,
               MaterialPageRoute(builder: (_) => const ChangePasswordScreen())),
@@ -519,11 +523,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // Legal Section
-        _buildLegalSection(context, hp),
-        const SizedBox(height: 12),
-
-        // Logout — LAST
+        // 3. Logout — LAST
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
