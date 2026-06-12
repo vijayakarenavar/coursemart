@@ -1,7 +1,10 @@
 /// Certificate View Screen
 /// ✅ Bearer token header WebView मध्ये inject करतो
 /// ✅ Direct certificate page open होतो (no login needed)
+/// ✅ Download → फोनच्या Downloads folder मध्ये save (blob + regular <a download> दोन्ही)
 library;
+
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -9,6 +12,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../models/certificate.dart';
 import '../../services/secure_storage.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/download_manager.dart';
 
 class CertificateViewScreen extends StatefulWidget {
   final Certificate cert;
@@ -23,6 +27,8 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
   WebViewController? _controller; // ✅ nullable — ready झाल्यावरच use
   bool _isLoading = true;
   bool _hasError = false;
+  String? _lastHandledBlobUrl; // duplicate triggers टाळण्यासाठी
+  String? _token; // ✅ blob fetch साठी (cookies/session सोबत वापरता येईल)
 
   @override
   void initState() {
@@ -40,6 +46,7 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
     }
 
     final token = await SecureStorage().getAuthToken();
+    _token = token;
 
     // ✅ Certificate model मधला certificateUrl वापर (attemptId based)
     final url = widget.cert.certificateUrl;
@@ -50,6 +57,10 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
     final controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
+      ..addJavaScriptChannel(
+        'CertDownloader',
+        onMessageReceived: _handleBlobDownload,
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (url) {
@@ -59,9 +70,12 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
               _hasError = false;
             });
           },
-          onPageFinished: (url) {
+          onPageFinished: (url) async {
             if (kDebugMode) debugPrint('✅ Page finished: $url');
             if (mounted) setState(() => _isLoading = false);
+
+            // ✅ Download interceptor inject करा (blob + regular <a download>)
+            await _injectDownloadInterceptor();
           },
           onWebResourceError: (error) {
             if (kDebugMode) debugPrint('❌ WebView error: ${error.description}');
@@ -71,21 +85,164 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
             });
           },
           onNavigationRequest: (request) {
-            if (kDebugMode) debugPrint('🔀 Navigation: ${request.url}');
+            final navUrl = request.url;
+            if (kDebugMode) debugPrint('🔀 Navigation: $navUrl');
+
+            // ✅ blob: URL असेल तर — WebView ला navigate करू देऊ नका,
+            // त्याऐवजी JS ने fetch करून base64 म्हणून आपल्याकडे आणा
+            if (navUrl.startsWith('blob:')) {
+              if (_lastHandledBlobUrl != navUrl) {
+                _lastHandledBlobUrl = navUrl;
+                _fetchBlobAndSend(navUrl);
+              }
+              return NavigationDecision.prevent;
+            }
+
             return NavigationDecision.navigate;
           },
         ),
-      )
-      ..loadRequest(
-        Uri.parse(url),
-        headers: {
-          if (token != null) 'Authorization': 'Bearer $token',
-          'Accept': 'text/html,application/xhtml+xml',
-        },
       );
+
+    controller.loadRequest(
+      Uri.parse(url),
+      headers: {
+        if (token != null) 'Authorization': 'Bearer $token',
+        'Accept': 'text/html,application/xhtml+xml',
+      },
+    );
 
     if (mounted) {
       setState(() => _controller = controller);
+    }
+  }
+
+  /// 🔹 Page मध्ये JS inject करतो जो download clicks intercept करतो
+  /// — blob: URLs आणि regular <a download> links दोन्ही handle करतो
+  Future<void> _injectDownloadInterceptor() async {
+    final controller = _controller;
+    if (controller == null) return;
+
+    try {
+      await controller.runJavaScript('''
+        (function() {
+          if (window._certDownloadInterceptorInstalled) return;
+          window._certDownloadInterceptorInstalled = true;
+
+          const originalClick = HTMLAnchorElement.prototype.click;
+          HTMLAnchorElement.prototype.click = function() {
+            const href = this.href || '';
+
+            // ✅ Case 1: blob: URL — fetch करून base64 म्हणून पाठवा
+            if (href.startsWith('blob:')) {
+              fetch(href)
+                .then(res => res.blob())
+                .then(blob => {
+                  const reader = new FileReader();
+                  reader.onloadend = function() {
+                    const base64 = reader.result.split(',')[1];
+                    CertDownloader.postMessage(base64);
+                  };
+                  reader.readAsDataURL(blob);
+                });
+              return; // default download cancel
+            }
+
+            // ✅ Case 2: regular link with download attribute (PDF वगैरे)
+            if (this.hasAttribute('download') &&
+                (href.toLowerCase().includes('.pdf') ||
+                 href.toLowerCase().includes('certificate') ||
+                 href.toLowerCase().includes('download'))) {
+              fetch(href, { credentials: 'include' })
+                .then(res => res.blob())
+                .then(blob => {
+                  const reader = new FileReader();
+                  reader.onloadend = function() {
+                    const base64 = reader.result.split(',')[1];
+                    CertDownloader.postMessage(base64);
+                  };
+                  reader.readAsDataURL(blob);
+                });
+              return; // default download cancel
+            }
+
+            return originalClick.apply(this, arguments);
+          };
+        })();
+      ''');
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ JS injection failed: $e');
+    }
+  }
+  /// 🔹 blob: URL ला page च्या JS context मध्ये fetch करून
+  /// base64 म्हणून CertDownloader channel वर पाठवतो
+  Future<void> _fetchBlobAndSend(String blobUrl) async {
+    final controller = _controller;
+    if (controller == null) return;
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Downloading certificate...')),
+      );
+    }
+
+    try {
+      // JS string मध्ये safe टाकण्यासाठी escape करा
+      final escapedUrl = blobUrl.replaceAll("'", "\\'");
+
+      await controller.runJavaScript('''
+      fetch('$escapedUrl')
+        .then(res => res.blob())
+        .then(blob => {
+          const reader = new FileReader();
+          reader.onloadend = function() {
+            const base64 = reader.result.split(',')[1];
+            CertDownloader.postMessage(base64);
+          };
+          reader.readAsDataURL(blob);
+        })
+        .catch(err => {
+          console.error('Blob fetch failed:', err);
+        });
+    ''');
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Blob fetch JS failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: $e')),
+        );
+      }
+    }
+  }
+
+  /// 🔹 base64 PDF data फोनच्या Downloads मध्ये save
+  Future<void> _handleBlobDownload(JavaScriptMessage message) async {
+    if (kDebugMode) debugPrint('⬇️ Download data received');
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Downloading certificate...')),
+      );
+    }
+
+    try {
+      final bytes = base64Decode(message.message);
+      final fileName =
+          '${DownloadManager.sanitizeFileName(widget.cert.certificateNumber)}.pdf';
+
+      await DownloadManager().saveBytesToDownloads(fileName, bytes);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Certificate saved to Downloads')),
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Save error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: $e')),
+        );
+      }
     }
   }
 
@@ -120,11 +277,9 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
       ),
       body: Stack(
         children: [
-          // ✅ Controller ready झाल्यावरच WebViewWidget दाखव
           if (_controller != null)
             WebViewWidget(controller: _controller!),
 
-          // Loading — controller नाही किंवा page load होत आहे
           if (_isLoading && !_hasError)
             Container(
               color: AppColors.bgOf(context),
@@ -143,7 +298,6 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
               ),
             ),
 
-          // Error state
           if (_hasError)
             Container(
               color: AppColors.bgOf(context),

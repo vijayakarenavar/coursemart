@@ -45,7 +45,13 @@ class ApiService {
     );
 
     _dio.interceptors.add(AuthInterceptor(_secureStorage));
-    _dio.interceptors.add(LoggingInterceptor());
+
+    // ✅ LoggingInterceptor फक्त Debug mode मध्येच चालू राहील
+    // यामुळे Play Store वर अ‍ॅप टाकल्यावर टोकन किंवा डेटा लीक होणार नाही
+    if (kDebugMode) {
+      _dio.interceptors.add(LoggingInterceptor());
+    }
+
     _dio.interceptors.add(RetryInterceptor(dio: _dio));
   }
 
