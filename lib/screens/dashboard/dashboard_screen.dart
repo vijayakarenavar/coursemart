@@ -21,7 +21,7 @@ import '../course/course_details_screen.dart';
 import '../profile/profile_screen.dart';
 import '../../models/course.dart';
 import '../../config/feature_flags.dart';
-import '../certificates/certificate_view_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Responsive helper
 class _Responsive {
@@ -1261,11 +1261,9 @@ class _CertificateCard extends StatelessWidget {
 
                 // View & Download button — cyan gradient (login button sarkha)
                 GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CertificateViewScreen(cert: cert),
-                    ),
+                  onTap: () => launchUrl(
+                    Uri.parse(cert.certificateUrl),
+                    mode: LaunchMode.externalApplication,
                   ),
                   child: Container(
                     width: double.infinity,
