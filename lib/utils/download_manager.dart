@@ -2,11 +2,8 @@
 library;
 
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../config/api_config.dart';
@@ -21,75 +18,12 @@ class DownloadManager {
   factory DownloadManager() => _instance;
   DownloadManager._internal();
 
-  static const MethodChannel _channel = MethodChannel('coursemart/downloads');
-
   Dio get _dio => ApiService().dio;
   final Map<String, CancelToken> _activeDownloads = {};
 
   Future<Directory> _getDownloadDirectory() async {
     return await getApplicationDocumentsDirectory();
   }
-
-  /// 🔹 Filename safe करण्यासाठी helper
-  static String sanitizeFileName(String name) {
-    final safe = name.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
-    return safe.isEmpty ? 'certificate' : safe;
-  }
-
-  // ───────────────────────────────────────────────────────────
-  // ✅ NEW: Certificate साठी — फोनच्या Downloads folder मध्ये save
-  // ───────────────────────────────────────────────────────────
-
-  /// Bytes थेट MediaStore.Downloads मध्ये save करा (Android native via MethodChannel)
-  Future<void> saveBytesToDownloads(String fileName, Uint8List bytes) async {
-    await _channel.invokeMethod('saveToDownloads', {
-      'fileName': fileName,
-      'bytes': bytes,
-    });
-  }
-
-  /// URL वरून PDF bytes download करून थेट Downloads folder मध्ये save करा
-  Future<void> downloadToPublicDownloads({
-    required String url,
-    required String fileName,
-    String? token,
-  }) async {
-    final fullUrl = url.startsWith('http') ? url : ApiConfig.buildMediaUrl(url);
-
-    final response = await Dio().get<List<int>>(
-      fullUrl,
-      options: Options(
-        responseType: ResponseType.bytes,
-        followRedirects: true,
-        maxRedirects: 5,
-        receiveTimeout: AppConstants.requestTimeout,
-        sendTimeout: AppConstants.requestTimeout,
-        headers: {
-          'Accept': 'application/pdf,*/*',
-          if (token != null) 'Authorization': 'Bearer $token',
-        },
-      ),
-    );
-
-    final data = response.data;
-    if (data == null || data.length < 100) {
-      throw Exception('Downloaded file is too small — likely an error page');
-    }
-
-    final bytes = Uint8List.fromList(data);
-
-    // ✅ PDF magic-bytes check (%PDF)
-    if (bytes[0] != 0x25 || bytes[1] != 0x50 ||
-        bytes[2] != 0x44 || bytes[3] != 0x46) {
-      throw Exception('Downloaded file is not a valid PDF.');
-    }
-
-    await saveBytesToDownloads(fileName, bytes);
-  }
-
-  // ───────────────────────────────────────────────────────────
-  // Existing — Notes / app-internal PDF download (unchanged)
-  // ───────────────────────────────────────────────────────────
 
   Future<String?> getExistingFilePath(String fileName) async {
     final directory = await _getDownloadDirectory();
@@ -145,8 +79,6 @@ class DownloadManager {
         options: Options(
           followRedirects: true,
           maxRedirects: 5,
-          receiveTimeout: AppConstants.requestTimeout,
-          sendTimeout: AppConstants.requestTimeout,
           headers: {
             'Accept': 'application/pdf,*/*',
             if (token != null) 'Authorization': 'Bearer $token',

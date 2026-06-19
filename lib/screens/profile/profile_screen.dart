@@ -3,11 +3,11 @@
 library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_dialogs.dart';
 import 'change_password_screen.dart';
+import 'privacy_policy_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -416,9 +416,8 @@ class ProfileScreen extends StatelessWidget {
         children: [
           // Privacy Policy
           GestureDetector(
-            onTap: () => launchUrl(
-                Uri.parse('https://coursemart.edu-novaa.in/privacy-policy.html'),
-                mode: LaunchMode.externalApplication),
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
