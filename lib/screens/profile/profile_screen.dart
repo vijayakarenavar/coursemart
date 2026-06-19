@@ -417,7 +417,7 @@ class ProfileScreen extends StatelessWidget {
           // Privacy Policy
           GestureDetector(
             onTap: () => launchUrl(
-                Uri.parse('https://yourwebsite.com/privacy-policy'),
+                Uri.parse('https://coursemart.edu-novaa.in/privacy-policy.html'),
                 mode: LaunchMode.externalApplication),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
