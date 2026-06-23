@@ -1,6 +1,7 @@
 /// Profile Screen
-/// ✅ Dark Mode | ✅ Responsive | ✅ Safe Area | ✅ Landscape
+/// ✅ Dark Mode | ✅ Responsive | ✅ Safe Area
 library;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -26,7 +27,6 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     final isTablet = MediaQuery.of(context).size.shortestSide >= 600;
 
     return Scaffold(
@@ -36,6 +36,7 @@ class ProfileScreen extends StatelessWidget {
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
         backgroundColor: AppColors.primary,
         elevation: 0,
+        centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           Consumer<AuthProvider>(
@@ -59,14 +60,11 @@ class ProfileScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: isLandscape
-            ? _buildLandscape(context, isTablet)
-            : _buildPortrait(context, isTablet),
+        child: _buildPortrait(context, isTablet),
       ),
     );
   }
 
-  // ── Portrait ──────────────────────────────────────────────────────────────
   Widget _buildPortrait(BuildContext context, bool isTablet) {
     final hp = isTablet ? 24.0 : 14.0;
     return SingleChildScrollView(
@@ -89,40 +87,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // ── Landscape ─────────────────────────────────────────────────────────────
-  Widget _buildLandscape(BuildContext context, bool isTablet) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 4,
-          child: SingleChildScrollView(child: _buildAvatarHeader(context)),
-        ),
-        Expanded(
-          flex: 6,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _sectionLabel(context, 'Account Info'),
-                _buildInfoCard(context, 0),
-                const SizedBox(height: 20),
-                _sectionLabel(context, 'Enrolled Courses'),
-                _buildCoursesCard(context, 0),
-                const SizedBox(height: 20),
-                _sectionLabel(context, 'Actions'),
-                _buildActionButtons(context, 0),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Avatar Header ─────────────────────────────────────────────────────────
   Widget _buildAvatarHeader(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (_, auth, _) => Container(
@@ -137,20 +101,17 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              width: 86,
-              height: 86,
+              width: 86, height: 86,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: const LinearGradient(
                     colors: [AppColors.cyan, AppColors.cyanDark],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight),
-                boxShadow: [
-                  BoxShadow(
-                      color: AppColors.cyan.withOpacity(0.35),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6))
-                ],
+                boxShadow: [BoxShadow(
+                    color: AppColors.cyan.withOpacity(0.35),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6))],
               ),
               child: Center(
                 child: Text(
@@ -188,7 +149,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // ── Section Label ─────────────────────────────────────────────────────────
   Widget _sectionLabel(BuildContext context, String title) => Padding(
     padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
     child: Text(title.toUpperCase(),
@@ -199,7 +159,6 @@ class ProfileScreen extends StatelessWidget {
             letterSpacing: 0.9)),
   );
 
-  // ── Info Card ─────────────────────────────────────────────────────────────
   Widget _buildInfoCard(BuildContext context, double hp) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Consumer<AuthProvider>(
@@ -207,7 +166,7 @@ class ProfileScreen extends StatelessWidget {
         final student = auth.student;
         if (student == null) return const SizedBox.shrink();
         return Container(
-          margin: EdgeInsets.symmetric(horizontal: hp == 0 ? 0 : 14),
+          margin: EdgeInsets.symmetric(horizontal: hp),
           decoration: BoxDecoration(
             color: AppColors.cardOf(context),
             borderRadius: BorderRadius.circular(18),
@@ -230,18 +189,14 @@ class ProfileScreen extends StatelessWidget {
                   iconBg: const Color(0xFFE6F1FB),
                   iconColor: const Color(0xFF378ADD),
                   label: 'Roll Number',
-                  value: student.rollNumber.isNotEmpty
-                      ? student.rollNumber
-                      : 'N/A'),
+                  value: student.rollNumber.isNotEmpty ? student.rollNumber : 'N/A'),
               _divider(context),
               _infoRow(context,
                   icon: Icons.alternate_email,
                   iconBg: const Color(0xFFFFF3E0),
                   iconColor: const Color(0xFFFF9800),
                   label: 'Username',
-                  value: student.username.isNotEmpty
-                      ? '@${student.username}'
-                      : 'N/A'),
+                  value: student.username.isNotEmpty ? '@${student.username}' : 'N/A'),
               _divider(context),
               _infoRow(context,
                   icon: Icons.email_outlined,
@@ -270,14 +225,13 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // ── Courses Card ──────────────────────────────────────────────────────────
   Widget _buildCoursesCard(BuildContext context, double hp) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Consumer<AuthProvider>(
       builder: (_, auth, _) {
         final courses = auth.student?.enrolledCourses ?? [];
         return Container(
-          margin: EdgeInsets.symmetric(horizontal: hp == 0 ? 0 : 14),
+          margin: EdgeInsets.symmetric(horizontal: hp),
           decoration: BoxDecoration(
             color: AppColors.cardOf(context),
             borderRadius: BorderRadius.circular(18),
@@ -296,8 +250,7 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text('No courses enrolled yet',
                     style: TextStyle(
-                        color: AppColors.text2Of(context),
-                        fontSize: 13)),
+                        color: AppColors.text2Of(context), fontSize: 13)),
               ],
             ),
           )
@@ -312,8 +265,7 @@ class ProfileScreen extends StatelessWidget {
                     child: Row(
                       children: [
                         Container(
-                          width: 38,
-                          height: 38,
+                          width: 38, height: 38,
                           decoration: BoxDecoration(
                             color: AppColors.primary.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(11),
@@ -347,7 +299,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // ── Info Row ──────────────────────────────────────────────────────────────
   Widget _infoRow(BuildContext context,
       {required IconData icon,
         required Color iconBg,
@@ -359,8 +310,7 @@ class ProfileScreen extends StatelessWidget {
         child: Row(
           children: [
             Container(
-                width: 38,
-                height: 38,
+                width: 38, height: 38,
                 decoration: BoxDecoration(
                     color: iconBg, borderRadius: BorderRadius.circular(11)),
                 child: Icon(icon, color: iconColor, size: 19)),
@@ -388,7 +338,6 @@ class ProfileScreen extends StatelessWidget {
         ),
       );
 
-  // ── Divider ───────────────────────────────────────────────────────────────
   Widget _divider(BuildContext context) => Divider(
     height: 1,
     thickness: 0.5,
@@ -399,11 +348,9 @@ class ProfileScreen extends StatelessWidget {
     endIndent: 16,
   );
 
-  // ── Legal Section ─────────────────────────────────────────────────────────
-  Widget _buildLegalSection(BuildContext context, double hp) {
+  Widget _buildLegalSection(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: hp == 0 ? 0 : 0),
       decoration: BoxDecoration(
         color: AppColors.cardOf(context),
         borderRadius: BorderRadius.circular(18),
@@ -414,7 +361,6 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Privacy Policy
           GestureDetector(
             onTap: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
@@ -425,9 +371,8 @@ class ProfileScreen extends StatelessWidget {
                   Container(
                     width: 38, height: 38,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE6F1FB),
-                      borderRadius: BorderRadius.circular(11),
-                    ),
+                        color: const Color(0xFFE6F1FB),
+                        borderRadius: BorderRadius.circular(11)),
                     child: const Icon(Icons.privacy_tip_outlined,
                         color: Color(0xFF378ADD), size: 19),
                   ),
@@ -446,7 +391,6 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
           _divider(context),
-          // Account Deletion
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
@@ -455,9 +399,8 @@ class ProfileScreen extends StatelessWidget {
                 Container(
                   width: 38, height: 38,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFBEAF0),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
+                      color: const Color(0xFFFBEAF0),
+                      borderRadius: BorderRadius.circular(11)),
                   child: const Icon(Icons.delete_outline,
                       color: Color(0xFFD4537E), size: 19),
                 ),
@@ -479,16 +422,12 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // ── Action Buttons ────────────────────────────────────────────────────────
   Widget _buildActionButtons(BuildContext context, double hp) => Padding(
-    padding: EdgeInsets.symmetric(horizontal: hp == 0 ? 0 : 14),
+    padding: EdgeInsets.symmetric(horizontal: hp),
     child: Column(
       children: [
-        // 1. Legal Section (Privacy Policy + Account Deletion)
-        _buildLegalSection(context, hp),
+        _buildLegalSection(context),
         const SizedBox(height: 12),
-
-        // 2. Change Password
         GestureDetector(
           onTap: () => Navigator.push(context,
               MaterialPageRoute(builder: (_) => const ChangePasswordScreen())),
@@ -499,12 +438,10 @@ class ProfileScreen extends StatelessWidget {
               gradient: const LinearGradient(
                   colors: [AppColors.cyan, AppColors.cyanDark]),
               borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                    color: AppColors.cyan.withOpacity(0.35),
-                    blurRadius: 18,
-                    offset: const Offset(0, 7))
-              ],
+              boxShadow: [BoxShadow(
+                  color: AppColors.cyan.withOpacity(0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 7))],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -521,8 +458,6 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-
-        // 3. Logout — LAST
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(

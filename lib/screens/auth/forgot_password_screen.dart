@@ -1,5 +1,5 @@
 /// Forgot Password Screen
-/// ✅ Dark Mode | ✅ Responsive | ✅ Safe Area | ✅ Landscape
+/// ✅ Dark Mode | ✅ Responsive | ✅ Safe Area
 library;
 
 import 'package:coursemart_app/screens/auth/reset_password_screen.dart';
@@ -39,7 +39,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (!mounted) return;
 
       if (token != null) {
-        // Development mode — token मिळाला, directly reset screen
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -47,7 +46,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         );
       } else {
-        // Production mode — email गेली
         showSuccessSnackBar(
           context,
           'Password reset link sent to your email! Please check your inbox.',
@@ -66,30 +64,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     final isTablet = MediaQuery.of(context).size.shortestSide >= 600;
     final hp = isTablet ? 24.0 : 14.0;
 
     return Scaffold(
       backgroundColor: AppColors.bgOf(context),
       appBar: AppBar(
-        title: const Text('Forgot Password', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        title: const Text('Forgot Password',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
         backgroundColor: AppColors.primary,
         elevation: 0,
+        centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SafeArea(
         child: Form(
           key: _formKey,
-          child: isLandscape
-              ? _buildLandscape(context, hp)
-              : _buildPortrait(context, hp),
+          child: _buildPortrait(context, hp),
         ),
       ),
     );
   }
 
-  // ── Portrait ──────────────────────────────────────────────────────────────
   Widget _buildPortrait(BuildContext context, double hp) {
     return SingleChildScrollView(
       child: Column(
@@ -109,37 +105,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // ── Landscape: header left, form right ───────────────────────────────────
-  Widget _buildLandscape(BuildContext context, double hp) {
-    return Row(
-      children: [
-        Expanded(child: SingleChildScrollView(child: _buildHeader())),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(hp),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSectionLabel('Email Address', 0),
-                _buildEmailCard(context, 0),
-                const SizedBox(height: 24),
-                _buildSendOtpButton(0),
-                const SizedBox(height: 14),
-                _buildBackToLogin(),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildHeader() => Container(
     width: double.infinity,
     padding: const EdgeInsets.fromLTRB(16, 28, 16, 36),
     decoration: const BoxDecoration(
       color: AppColors.primary,
-      borderRadius: BorderRadius.only(bottomLeft: Radius.circular(32), bottomRight: Radius.circular(32)),
+      borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32), bottomRight: Radius.circular(32)),
     ),
     child: Column(
       children: [
@@ -147,13 +119,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           width: 72, height: 72,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: const LinearGradient(colors: [AppColors.cyan, AppColors.cyanDark], begin: Alignment.topLeft, end: Alignment.bottomRight),
-            boxShadow: [BoxShadow(color: AppColors.cyan.withOpacity(0.35), blurRadius: 18, offset: const Offset(0, 6))],
+            gradient: const LinearGradient(
+                colors: [AppColors.cyan, AppColors.cyanDark],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight),
+            boxShadow: [BoxShadow(
+                color: AppColors.cyan.withOpacity(0.35),
+                blurRadius: 18,
+                offset: const Offset(0, 6))],
           ),
           child: const Icon(Icons.mail_outline_rounded, color: Colors.white, size: 30),
         ),
         const SizedBox(height: 16),
-        const Text('Reset Your Password', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: Colors.white)),
+        const Text('Reset Your Password',
+            style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: Colors.white)),
         const SizedBox(height: 6),
         Text(
           'Enter your registered email.\nWe\'ll send a password reset link to your account.',
@@ -165,18 +144,24 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   );
 
   Widget _buildSectionLabel(String label, double hp) => Padding(
-    padding: EdgeInsets.fromLTRB(hp == 0 ? 0 : 18, 0, 18, 10),
-    child: Text(label.toUpperCase(), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.text2Of(context), letterSpacing: 0.9)),
+    padding: EdgeInsets.fromLTRB(hp, 0, hp, 10),
+    child: Text(label.toUpperCase(),
+        style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppColors.text2Of(context),
+            letterSpacing: 0.9)),
   );
 
   Widget _buildEmailCard(BuildContext context, double hp) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: hp == 0 ? 0 : 14),
+      margin: EdgeInsets.symmetric(horizontal: hp),
       decoration: BoxDecoration(
         color: AppColors.cardOf(context),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05)),
+        border: Border.all(
+            color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -184,7 +169,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           children: [
             Container(
               width: 36, height: 36,
-              decoration: BoxDecoration(color: AppColors.cyanLight, borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(
+                  color: AppColors.cyanLight, borderRadius: BorderRadius.circular(10)),
               child: const Icon(Icons.email_outlined, color: AppColors.cyanDark, size: 18),
             ),
             const SizedBox(width: 14),
@@ -197,9 +183,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 style: TextStyle(fontSize: 13.5, color: AppColors.textOf(context)),
                 decoration: InputDecoration(
                   labelText: 'Email Address',
-                  labelStyle: TextStyle(fontSize: 11, color: AppColors.text2Of(context), fontWeight: FontWeight.w500),
+                  labelStyle: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.text2Of(context),
+                      fontWeight: FontWeight.w500),
                   hintText: 'Enter your registered email',
-                  hintStyle: TextStyle(fontSize: 12, color: AppColors.text2Of(context).withOpacity(0.6)),
+                  hintStyle: TextStyle(
+                      fontSize: 12, color: AppColors.text2Of(context).withOpacity(0.6)),
                   border: InputBorder.none,
                   isDense: true,
                 ),
@@ -214,7 +204,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildSendOtpButton(double hp) => Padding(
-    padding: EdgeInsets.symmetric(horizontal: hp == 0 ? 0 : 14),
+    padding: EdgeInsets.symmetric(horizontal: hp),
     child: GestureDetector(
       onTap: _isLoading ? null : _handleSendOtp,
       child: Container(
@@ -223,17 +213,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         decoration: BoxDecoration(
           gradient: const LinearGradient(colors: [AppColors.cyan, AppColors.cyanDark]),
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: AppColors.cyan.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 8))],
+          boxShadow: [BoxShadow(
+              color: AppColors.cyan.withOpacity(0.4),
+              blurRadius: 20,
+              offset: const Offset(0, 8))],
         ),
         child: Center(
           child: _isLoading
-              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
+              ? const SizedBox(
+              height: 20, width: 20,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
               : Row(
             mainAxisSize: MainAxisSize.min,
             children: const [
               Icon(Icons.send_rounded, color: Colors.white, size: 17),
               SizedBox(width: 8),
-              Text('Send Reset Link  →', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+              Text('Send Reset Link  →',
+                  style: TextStyle(
+                      color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
             ],
           ),
         ),
@@ -248,7 +247,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         TextSpan(
           text: 'Remember your password? ',
           style: TextStyle(fontSize: 12, color: AppColors.text2Of(context)),
-          children: const [TextSpan(text: 'Sign In', style: TextStyle(color: AppColors.cyan, fontWeight: FontWeight.w700))],
+          children: const [
+            TextSpan(
+                text: 'Sign In',
+                style: TextStyle(color: AppColors.cyan, fontWeight: FontWeight.w700))
+          ],
         ),
       ),
     ),
